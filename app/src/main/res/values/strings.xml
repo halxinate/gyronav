@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">GyroNav</string>
+    <string name="title_activity_map">Map</string>
+    <string name="appdir">gyronav</string>
+    <string name="tempfname">.tempgyronav</string>
+</resources>

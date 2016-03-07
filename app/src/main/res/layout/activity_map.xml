@@ -1,0 +1,53 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".MapActivity"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/rootview">
+
+    <fragment
+        android:id="@+id/map"
+        class="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/bnMenu"
+        android:layout_gravity="left|bottom"
+        android:background="@mipmap/ic_menu"
+        android:alpha="0.7"
+        android:padding="16dp" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center"
+        android:id="@+id/bnBlock"
+        android:weightSum="2"
+        android:visibility="gone">
+
+        <Button
+            android:layout_width="@dimen/buttonsize"
+            android:layout_height="@dimen/buttonsize"
+            android:text="+"
+            android:id="@+id/bnPlus"
+            android:background="@mipmap/ic_disk"
+            android:textSize="@dimen/buttonfontsize"
+            android:alpha="0.7"
+            android:textColor="@color/bnText" />
+
+        <Button
+            android:layout_width="@dimen/buttonsize"
+            android:layout_height="@dimen/buttonsize"
+            android:text="-"
+            android:id="@+id/bnMinus"
+            android:background="@mipmap/ic_disk"
+            android:textSize="@dimen/buttonfontsize"
+            android:alpha="0.7"
+            android:textColor="@color/bnText" />
+    </LinearLayout>
+</FrameLayout>
+
