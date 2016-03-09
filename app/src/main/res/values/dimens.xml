@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="buttonsize">50dp</dimen>
-    <dimen name="buttonfontsize">16dp</dimen>
+    <dimen name="buttonsize">70dp</dimen>
+    <dimen name="buttonfontsize">24dp</dimen>
 </resources>

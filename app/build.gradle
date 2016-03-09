@@ -1,9 +1,16 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        alex1 {
+            keyAlias 'android'
+            keyPassword 'sandipas#69'
+            storeFile file('C:/Android/alex.keystore')
+            storePassword 'sandipas#69'
+        }
+    }
     compileSdkVersion 23
     buildToolsVersion "23.0.2"
-
     defaultConfig {
         applicationId "com.kukarin.app.gyronav"
         minSdkVersion 10
