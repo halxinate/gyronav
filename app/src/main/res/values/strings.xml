@@ -3,4 +3,5 @@
     <string name="title_activity_map">Map</string>
     <string name="appdir">gyronav</string>
     <string name="tempfname">.tempgyronav</string>
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyDNgmdYxFxbvhR7Pg8aJS3SbNiBIhYd6Ew</string>
 </resources>
