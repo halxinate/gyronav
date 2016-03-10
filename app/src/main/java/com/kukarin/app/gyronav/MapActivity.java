@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.PopupMenu;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -40,7 +41,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private int mCurSetting = -1; //inactive initially
     private int mGyroMode = 0; //loopmenu selection
     private int mGyroModeCounter = 0;
-    private String[] gyroModes = {"Scroll", "Zoom", "Map Mode","Way Point"};
+    private String[] gyroModes = {"Scroll", "Zoom", "Map Mode","Waypoint"};
 
     private int mMapTypeSwitch = 0;
     private int[] mapTypes = {GoogleMap.MAP_TYPE_NORMAL, GoogleMap.MAP_TYPE_SATELLITE, GoogleMap.MAP_TYPE_TERRAIN, GoogleMap.MAP_TYPE_HYBRID};
@@ -50,7 +51,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private final int MODEMTYPE =2;
     private final int MODEWAYPO =3;
 
-    private HideLooperLater loopHider = new HideLooperLater();
+    private HideLooperLater loopHider = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +95,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
         //Other
         updateHelpButton();
-        registerBroadcastReceiver(true);
+        ///registerBroadcastReceiver(true);
     }
 
     /**
@@ -142,10 +143,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                 mCurValue = Settings.getmGyProxyTime();
                 break;
         }
-    }
-
-    private void showLooper(boolean show){
-        findViewById(R.id.loopmenu).setVisibility(show?View.VISIBLE:View.GONE);
     }
 
     /**
@@ -201,7 +198,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                         moveMap(0, 1);
                         break;
                     case MODEZOOM: //Zoom
-                        zoomMap(1);
+                        zoomMap(-1);
                         break;
                     case MODEMTYPE: //MapMode
                         switchMap(1);
@@ -231,7 +228,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                         moveMap(0, -1);
                         break;
                     case MODEZOOM: //Zoom
-                        zoomMap(-1);
+                        zoomMap(1);
                         break;
                     case MODEMTYPE: //MapMode
                         switchMap(-1);
@@ -256,10 +253,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
                 break;
             case 5: //rotate CW
-                gyroModeSwitch(1);
+                gyroModeSwitch(-1);
                 break;
             case 6: //rotate CCW
-                gyroModeSwitch(-1);
+                gyroModeSwitch(1);
                 break;
             case 10: // proximity ----------------------------
                 break;
@@ -288,12 +285,23 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
     }
 
+    private void showLooper(boolean show){
+        findViewById(R.id.loopmenu).setVisibility(show ? View.VISIBLE : View.GONE);
+        showMode(!show);
+        if(!show) mGyroModeCounter = 0;
+    }
+
+    private void showMode(boolean b) {
+        findViewById(R.id.tv_mode).setVisibility(b?View.VISIBLE:View.GONE);
+    }
+
+
     /**
      * Cycle map modes
      * @param i
      */
     private void switchMap(int i) {
-        mMapTypeSwitch = loopValue(mMapTypeSwitch, i, mapTypes.length-1);
+        mMapTypeSwitch = loopValue(mMapTypeSwitch, i, mapTypes.length);
         mMap.setMapType(mapTypes[mMapTypeSwitch]);
     }
 
@@ -304,14 +312,16 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private void gyroModeSwitch(int i) {
         if(mGyroModeCounter==0){ //first rotate brings up the menu
             mGyroModeCounter = 1;
-            findViewById(R.id.loopmenu).setVisibility(View.VISIBLE);
+            showLooper(true);
+            loopHider = new HideLooperLater();
             loopHider.execute(""); //hide looper after a while
+            Log.d(TAG, "1 mGm="+mGyroMode);
             return;
         }
 
         //second rotate - move the menu
-        loopHider.prolong();
-        int sz = gyroModes.length-1;
+        if(loopHider!=null) loopHider.prolong();
+        int sz = gyroModes.length;
         int i1 = loopValue(mGyroMode-1, i, sz);
         int i2 = loopValue(mGyroMode,   i, sz);
         int i3 = loopValue(mGyroMode+1, i, sz);
@@ -322,6 +332,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
         mGyroMode = i2;
         updateHelpButton();
+        Log.d(TAG, "2 mGm=" + mGyroMode);
     }
 
     /**
@@ -348,10 +359,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
      * @param i
      * @return
      */
-    private int loopValue(int cur, int i, int max) {
+    private int loopValue(int cur, int i, int sz) {
         cur+=i;
-        if(cur<0) cur = max;
-        if(cur>max) cur = 0;
+        if(cur<0) cur += sz;
+        else if(cur>=sz) cur -= sz;
         return cur;
     }
 
@@ -614,7 +625,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
         @Override
         protected void onPostExecute(String result) {
-            mGyroModeCounter = 0;
             showLooper(false);
         }
 

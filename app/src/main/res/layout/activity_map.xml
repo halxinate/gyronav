@@ -92,14 +92,13 @@
 
     <LinearLayout
         android:orientation="horizontal"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="@dimen/scroller_item_height"
-        android:layout_gravity="center_horizontal"
-        android:gravity="top"
+        android:gravity="center_horizontal|top"
         android:id="@+id/loopmenu"
         android:alpha="0.7"
         android:visibility="gone"
-        android:layout_marginTop="10dp">
+        android:focusableInTouchMode="true">
 
         <TextView
             android:layout_width="wrap_content"
@@ -110,24 +109,31 @@
             android:padding="8dp"
             android:background="#000000"
             android:textColor="#8e8772"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="0dp" />
+            android:layout_marginTop="16dp"
+            android:elevation="8dp" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Way Point"
+            android:text="Waypoint"
             android:id="@+id/tv_loop1"
             android:gravity="center_horizontal|fill_vertical"
             android:padding="8dp"
             android:background="#000000"
             android:textColor="#8e8772"
-            android:layout_margin="2dp"
-            android:layout_weight="1" />
+            android:elevation="8dp"
+            android:singleLine="true"
+            android:layout_weight="2"
+            android:layout_marginLeft="2dp"
+            android:layout_marginRight="2dp"
+            android:layout_marginBottom="2dp"
+            android:layout_marginTop="8dp"
+            android:lines="1"
+            android:ellipsize="end" />
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:text="Scroll"
@@ -136,21 +142,29 @@
             android:padding="8dp"
             android:background="#000000"
             android:textColor="#ffbf00"
-            android:layout_margin="2dp"
-            android:layout_weight="1" />
+            android:elevation="8dp"
+            android:layout_marginLeft="2dp"
+            android:layout_marginRight="2dp"
+            android:layout_marginBottom="8dp" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Zoom"
+            android:text="Map Mode"
             android:id="@+id/tv_loop3"
             android:gravity="center_horizontal|fill_vertical"
             android:padding="8dp"
             android:background="#000000"
             android:textColor="#8e8772"
-            android:layout_margin="2dp"
-            android:layout_weight="1" />
+            android:elevation="8dp"
+            android:layout_weight="2"
+            android:layout_marginLeft="2dp"
+            android:layout_marginRight="2dp"
+            android:layout_marginBottom="2dp"
+            android:layout_marginTop="8dp"
+            android:lines="1"
+            android:ellipsize="end" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
@@ -160,8 +174,9 @@
             android:padding="8dp"
             android:background="#000000"
             android:textColor="#8e8772"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="0dp" />
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="0dp"
+            android:elevation="8dp" />
     </LinearLayout>
 
     <TextView

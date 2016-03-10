@@ -35,7 +35,7 @@ public class Settings {
 
     //Strings work
     public static final String DATETIMEFORMAT = "yyyy/MM/dd HH:mm:ss";
-    private static int mGyRotSpeed = 35;
+    private static int mGyRotSpeed = 70 ;
     private static int mGyDelayTime = 6;
     private static int mGyShakeSpeed = 50;
     private static int mGyProxyTime = 10;

@@ -203,7 +203,9 @@ public class SensorsService extends Service {
                 if (cmd > 0) { //something already started rotating, so this is end of that move
                     if((event.timestamp-giroTimeStamp)* NS2S > timeDelta) //don't register too fast events
                         sendEvent(cmd);
-                    mIsRotXstarted = mIsRotYstarted = mIsRotZstarted = 0; //reset command
+                    mIsRotXstarted = 0;
+                    mIsRotYstarted = 0;
+                    mIsRotZstarted = 0;
                     giroTimeStamp = event.timestamp;
                 }
                 return;
@@ -262,7 +264,7 @@ public class SensorsService extends Service {
      * @param cmd
      */
     private void sendEvent(int cmd) {
-        //Log.d("sender", "Broadcasting result message: " + data);
+        Log.d("sender", "B: " + cmd);
         Intent intent = new Intent(Settings.BROADCASTFILTER);
         intent.putExtra(Settings.EXID_GESTURE, cmd);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
