@@ -166,8 +166,8 @@ public class SensorsService extends Service {
             float axisX = event.values[0];
             float axisY = event.values[1];
             float axisZ = event.values[2];
-            float timeDelta = 0.6f; //sec
-            float fastRotation = 3.5f; //rad/sec
+            float timeDelta = Settings.getmGyDelayTime()/10f;// 0.6fsec
+            float fastRotation = Settings.getmGyRotSpeed()/10f; //3.5f; //rad/sec
             float rotXabs = 0, rotYabs = 0, rotZabs = 0;
             int rotXsig = 0, rotYsig = 0, rotZsig = 0;
             if (axisX > fastRotation) {

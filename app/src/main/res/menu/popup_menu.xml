@@ -3,26 +3,25 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.andoidsrc.popupmenu.MainActivity">
 
-    <group android:checkableBehavior="single">
-        <item android:id="@+id/m_rspeed"
-            android:title="Rotation speed 3.5" />
-        <item android:id="@+id/m_btime"
-            android:title="Blocking time 0.6" />
-        <item android:id="@+id/m_shspeed"
-            android:title="Shaking speed 5.0" />
-        <item android:id="@+id/red"
-            android:title="Proximity time 0.5" />
+    <group
+        android:id="@+id/m_group"
+        android:checkableBehavior="single"
+        android:title="Select controlled value">
+        <item
+            android:id="@+id/m_rspeed"
+            android:title="Rotation speed\t[" />
+        <item
+            android:id="@+id/m_btime"
+            android:title="Blocking time\t[" />
+        <item
+            android:id="@+id/m_shspeed"
+            android:title="Shaking speed\t[" />
+        <item
+            android:id="@+id/m_proxtime"
+            android:title="Proximity time\t[" />
     </group>
-
     <item
-        android:id="@+id/m_settings"
-        android:title="Settings"
-        android:visible="true"
-        tools:showAsAction="ifRoom|withText" />
+        android:id="@+id/m_hide"
+        android:title="Hide param.controler" />
 
-    <item
-        android:id="@+id/m_test"
-        android:title="Test"
-        android:visible="true"
-        tools:showAsAction="ifRoom|withText" />
 </menu>

@@ -2,23 +2,18 @@ package com.kukarin.app.gyronav;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
-import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -27,13 +22,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
 import com.kukarin.app.gyronav.sensor.SensorsService;
 
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -43,6 +34,23 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private View menubutton;
     private GoogleMap mMap;
     private float mStepX=1, mStepY=1;
+    private int mMenuSelection = 0;
+    private int[] mMenuChecks = {R.id.m_rspeed, R.id.m_btime, R.id.m_shspeed, R.id.m_proxtime };
+    private int mCurValue = -1;
+    private int mCurSetting = -1; //inactive initially
+    private int mGyroMode = 0; //loopmenu selection
+    private int mGyroModeCounter = 0;
+    private String[] gyroModes = {"Scroll", "Zoom", "Map Mode","Way Point"};
+
+    private int mMapTypeSwitch = 0;
+    private int[] mapTypes = {GoogleMap.MAP_TYPE_NORMAL, GoogleMap.MAP_TYPE_SATELLITE, GoogleMap.MAP_TYPE_TERRAIN, GoogleMap.MAP_TYPE_HYBRID};
+
+    private final int MODESCROLL=0;
+    private final int MODEZOOM  =1;
+    private final int MODEMTYPE =2;
+    private final int MODEWAYPO =3;
+
+    private HideLooperLater loopHider = new HideLooperLater();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +64,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        //Menu
         menubutton = findViewById(R.id.bnMenu);
         menubutton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,19 +72,92 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                 showMenu();
             }
         });
+        //mCurSetting = -1; //hidden
+
+        //+/-Buttons block
         findViewById(R.id.bnMinus).setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //moveCursor(-1);
+                mCurValue-=Settings.getmGyStep();
+                setSettings();
+                setControlValue();
             }
         });
         findViewById(R.id.bnPlus).setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //moveCursor(1);
+                mCurValue += Settings.getmGyStep();
+                setSettings();
+                setControlValue();
             }
         });
+
+        //Other
+        updateHelpButton();
         registerBroadcastReceiver(true);
+    }
+
+    /**
+     * Use the Index of the currently selected setting to tweak by +/-
+     * to update the Settings object for that value from current one
+     * and the corresponding menu item title at its value part
+     */
+    private void setSettings() {
+        switch (mCurSetting) {
+            case 0:
+                Settings.setmGyRotSpeed(mCurValue);
+                updateMenuItemText();
+                break;
+            case 1:
+                Settings.setmGyDelayTime(mCurValue);
+                updateMenuItemText();
+                break;
+            case 2:
+                Settings.setmGyShakeSpeed(mCurValue);
+                updateMenuItemText();
+                break;
+            case 3:
+                Settings.setmGyProxyTime(mCurValue);
+                updateMenuItemText();
+                break;
+        }
+    }
+
+    /**
+     * Read cur value to work with +/- from Settings object
+     * according to currently selected in the menu value to tweak
+     */
+    private void getSettings() {
+        switch(mCurSetting){
+            case 0:
+                mCurValue = Settings.getmGyRotSpeed();
+                break;
+            case 1:
+                mCurValue = Settings.getmGyDelayTime();
+                break;
+            case 2:
+                mCurValue = Settings.getmGyShakeSpeed();
+                break;
+            case 3:
+                mCurValue = Settings.getmGyProxyTime();
+                break;
+        }
+    }
+
+    private void showLooper(boolean show){
+        findViewById(R.id.loopmenu).setVisibility(show?View.VISIBLE:View.GONE);
+    }
+
+    /**
+     * Replace TV text adding a value
+     */
+    private void updateMenuItemText() {
+        if(popupMenu!=null) {
+            MenuItem i = popupMenu.getMenu().getItem(mCurSetting);
+            String t = (String) i.getTitle();
+            t = t.substring(0, t.indexOf("[")) + "[" + mCurValue / 10f + "]";
+            i.setTitle(t);
+        }
     }
 
     @Override
@@ -113,22 +195,71 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         switch (data.getInt(Settings.EXID_GESTURE, 0)) {
             //GYRO ----------------------------------------
             case 1: //Up
-                moveMap(0, 1);
+                showLooper(false);
+                switch(mGyroMode){
+                    case MODESCROLL: //Scroll
+                        moveMap(0, 1);
+                        break;
+                    case MODEZOOM: //Zoom
+                        zoomMap(1);
+                        break;
+                    case MODEMTYPE: //MapMode
+                        switchMap(1);
+                        break;
+                    case MODEWAYPO: //waypoins
+                        break;
+                }
                 break;
             case 2: //Rt //
-                moveMap(1, 0);
+                showLooper(false);
+                switch(mGyroMode){
+                    case MODESCROLL: //Scroll
+                        moveMap(1, 0);
+                        break;
+                    case MODEZOOM: //Zoom
+                        break;
+                    case MODEMTYPE: //MapMode
+                        break;
+                    case MODEWAYPO: //waypoins
+                        break;
+                }
                 break;
             case 3: //Dn
-                moveMap(0, -1);
+                showLooper(false);
+                switch(mGyroMode){
+                    case MODESCROLL: //Scroll
+                        moveMap(0, -1);
+                        break;
+                    case MODEZOOM: //Zoom
+                        zoomMap(-1);
+                        break;
+                    case MODEMTYPE: //MapMode
+                        switchMap(-1);
+                        break;
+                    case MODEWAYPO: //waypoins
+                        break;
+                }
                 break;
             case 4: //Lt
-                moveMap(-1, 0);
+                showLooper(false);
+                switch(mGyroMode){
+                    case MODESCROLL: //Scroll
+                        moveMap(-1, 0);
+                        break;
+                    case MODEZOOM: //Zoom
+                        break;
+                    case MODEMTYPE: //MapMode
+                        break;
+                    case MODEWAYPO: //waypoins
+                        break;
+                }
+
                 break;
             case 5: //rotate CW
-                zoomMap(1);
+                gyroModeSwitch(1);
                 break;
             case 6: //rotate CCW
-                zoomMap(-1);
+                gyroModeSwitch(-1);
                 break;
             case 10: // proximity ----------------------------
                 break;
@@ -155,6 +286,73 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                 return; //if 0 or other don't process
         }
 
+    }
+
+    /**
+     * Cycle map modes
+     * @param i
+     */
+    private void switchMap(int i) {
+        mMapTypeSwitch = loopValue(mMapTypeSwitch, i, mapTypes.length-1);
+        mMap.setMapType(mapTypes[mMapTypeSwitch]);
+    }
+
+    /**
+     * Switchy gyro sensor mode menu control
+     * @param i
+     */
+    private void gyroModeSwitch(int i) {
+        if(mGyroModeCounter==0){ //first rotate brings up the menu
+            mGyroModeCounter = 1;
+            findViewById(R.id.loopmenu).setVisibility(View.VISIBLE);
+            loopHider.execute(""); //hide looper after a while
+            return;
+        }
+
+        //second rotate - move the menu
+        loopHider.prolong();
+        int sz = gyroModes.length-1;
+        int i1 = loopValue(mGyroMode-1, i, sz);
+        int i2 = loopValue(mGyroMode,   i, sz);
+        int i3 = loopValue(mGyroMode+1, i, sz);
+
+        ((TextView)findViewById(R.id.tv_loop1)).setText(gyroModes[i1]);
+        ((TextView)findViewById(R.id.tv_loop2)).setText(gyroModes[i2]);
+        ((TextView)findViewById(R.id.tv_loop3)).setText(gyroModes[i3]);
+
+        mGyroMode = i2;
+        updateHelpButton();
+    }
+
+    /**
+     * Update rigt bottom available gestures indicator
+     */
+    private void updateHelpButton() {
+        switch(mGyroMode){
+            case MODESCROLL:
+                findViewById(R.id.bnHelp).setBackgroundResource(R.mipmap.ic_help1);
+                break;
+            case MODEZOOM:
+            case MODEMTYPE:
+            case MODEWAYPO:
+                findViewById(R.id.bnHelp).setBackgroundResource(R.mipmap.ic_help2);
+                break;
+        }
+        ((TextView)findViewById(R.id.tv_mode)).setText(gyroModes[mGyroMode]);
+
+    }
+
+    /**
+     * Safely loop a provided index through the loopmenu allowed values in a loop
+     * @param cur
+     * @param i
+     * @return
+     */
+    private int loopValue(int cur, int i, int max) {
+        cur+=i;
+        if(cur<0) cur = max;
+        if(cur>max) cur = 0;
+        return cur;
     }
 
     private void zoomMap(int i) {
@@ -279,96 +477,117 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
-                /*
                 switch (item.getItemId()) {
 
-                    case R.id.m_loadgpx:
-                        menuLoadGPX();
+                    case R.id.m_rspeed:
+                        if (menuToggle(item)) {
+                            if(mCurSetting<0) showGauge();
+                            mCurSetting = 0;
+                            mCurValue = Settings.getmGyRotSpeed();
+                            setControlValue();
+                            setControlText();
+                        }
                         break;
-                    case R.id.m_edittrack:
-                        mEditMode = !mEditMode; //toggle edit mode
-                        mapEditMode();
+                    case R.id.m_btime:
+                        if (menuToggle(item)) {
+                            if(mCurSetting<0) showGauge();
+                            mCurSetting = 1;
+                            mCurValue = Settings.getmGyDelayTime();
+                            setControlValue();
+                            setControlText();
+                        }
                         break;
-                    case R.id.m_savegpx:
-                        if (Settings.mIsLicensed - Settings.LICOFFSET != Settings.LICENSEBAD)
-                            save(Settings.LICENSEBAD - Settings.LICOFFSET);
-                        else
-                            save();
-                        isDirty = false;
+                    case R.id.m_shspeed:
+                        if (menuToggle(item)) {
+                            if(mCurSetting<0) showGauge();
+                            mCurSetting = 2;
+                            mCurValue = Settings.getmGyShakeSpeed();
+                            setControlValue();
+                            setControlText();
+                        }
                         break;
-                    case R.id.m_commit:
-                        if (!isDirty || (Settings.mIsLicensed - Settings.LICENSEBAD == 0))
-                            return false;
-                        commit();
-                        isDirty = false;
-
+                    case R.id.m_proxtime:
+                        if (menuToggle(item)) {
+                            if(mCurSetting<0) showGauge();
+                            mCurSetting = 3;
+                            mCurValue = Settings.getmGyProxyTime();
+                            setControlValue();
+                            setControlText();
+                        }
                         break;
-                    case R.id.m_cancel: //Undo edits to commit point
-                        resetSelection();
-                        mIsTrackSelected = false;
-                        isDirty = false;
-
-                        //Redraw the mGPX as it is after the last commit
+                    case R.id.m_hide:
+                        hideGauge();
                         break;
-                    case R.id.m_inspoint:
-                        isDirty = true;
-                        mTrack.insertAfter(mCurIndex);
-                        mTo += 1;
-                        if (mTo >= mTrack.size()) mTo = mTrack.size() - 1;
-                        redrawAll();
-                        break;
-
-                    case R.id.m_delpoint:
-                        isDirty = true;
-                        mTrack.deleteAt(mCurIndex);
-                        mTo -= 1;
-                        resetSelection();
-                        redrawAll();
-                        break;
-
-                    case R.id.m_extrapol:
-                        showExtrapolationFragment();
-                        break;
-
-                    case R.id.m_settings:
-                        Intent i2 = new Intent(Busy.getInstance().getContext(),
-                                SettingsActivity.class);
-                        startActivityForResult(i2, 2);
-                        break;
-
-                    case R.id.m_test:
-                        showExtrapolationFragment();
-                        break;
-
-                    default:
                 }
-                updateMenuIcon();
-                */
-                return false;
+                return true;
             }
         });
         popupMenu.inflate(R.menu.popup_menu);
 
-        /*
-        popupMenu.getMenu().findItem(R.id.m_edittrack).setVisible(mIsLoaded);
-        popupMenu.getMenu().findItem(R.id.m_savegpx).setVisible(mIsLoaded);
-        popupMenu.getMenu().findItem(R.id.m_editfile).setVisible(mIsLoaded);
+        int temp = mCurSetting;
+        for(int i=0;i<4;i++) { //set menu items text
+            mCurSetting = i;
+            getSettings(); //mCurVal is now having val from Settings
+            updateMenuItemText();
+        }
+        mCurSetting = temp;
+        if(mCurSetting>-1) {
+            menuToggle(popupMenu.getMenu().getItem(mCurSetting));
+        }
 
-        //Edit mode handling
-        popupMenu.getMenu().findItem(R.id.m_inspoint).setVisible(!(mCurIndex < 0));
-        popupMenu.getMenu().findItem(R.id.m_delpoint).setVisible(!(mCurIndex < 0));
-        popupMenu.getMenu().findItem(R.id.m_edittrack).setTitle(mEditMode ? "Map Mode" : "Edit Mode");
-        popupMenu.getMenu().findItem(R.id.m_loadgpx).setVisible(!mEditMode);
-
-        popupMenu.getMenu().findItem(R.id.m_commit).setVisible(mIsTrackSelected && isDirty);
-        popupMenu.getMenu().findItem(R.id.m_cancel).setVisible(mEditMode);
-
-        popupMenu.getMenu().findItem(R.id.m_extrapol).setVisible(mEditMode);
-        */
         popupMenu.show();
     }
 
+    /**
+     * Initially the +/- contrll is hidden show it on menu selection
+     */
+    private void showGauge() {
+        findViewById(R.id.bnBlock).setVisibility(View.VISIBLE);
+    }
+    private void hideGauge() {
+        findViewById(R.id.bnBlock).setVisibility(View.GONE);
+        mCurSetting = -1;
+    }
+
+    /**
+     * Gauge type note from menu item Title
+     */
+    private void setControlText() {
+        String t = popupMenu.getMenu().getItem(mCurSetting).getTitle().toString();
+        t = t.substring(0, t.indexOf("[")-1);
+        ((TextView)findViewById(R.id.tv_explan)).setText(t);
+    }
+
+    /**
+     * Set the text of the value on the screen
+     */
+    private void setControlValue() {
+        ((TextView)findViewById(R.id.tv_gauge1)).setText(String.format("%.1f", mCurValue/10f));
+    }
+
+    /**
+     * Toggle the radio button
+     */
+    private boolean menuToggle(MenuItem item) {
+        if (item.isChecked()) item.setChecked(false);
+        else item.setChecked(true);
+        return item.isChecked();
+    }
+
     /*
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.vibrate:
+            case R.id.dont_vibrate:
+                if (item.isChecked()) item.setChecked(false);
+                else item.setChecked(true);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     private void showExtrapolationFragment() {
         Intent intent = new Intent(this, ExtrapolationActivity.class);
         intent.putExtra(Settings.EXID_STARTTIME, mStartTime);
@@ -376,5 +595,40 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         startActivityForResult(intent, Settings.RESRET_EXTRAPOL);
     }
     */
+
+    private class HideLooperLater extends AsyncTask<String, Void, String> {
+        private final int maxloops = 6;
+        int loops;
+
+        @Override
+        protected String doInBackground(String... params) {
+            for(loops=maxloops; loops>0; loops--) { //~5 sec
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            mGyroModeCounter = 0;
+            showLooper(false);
+        }
+
+        @Override
+        protected void onPreExecute() {
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+        }
+
+        public void prolong() {
+            loops = maxloops;
+        }
+    }
 
 }

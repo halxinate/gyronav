@@ -35,6 +35,12 @@ public class Settings {
 
     //Strings work
     public static final String DATETIMEFORMAT = "yyyy/MM/dd HH:mm:ss";
+    private static int mGyRotSpeed = 35;
+    private static int mGyDelayTime = 6;
+    private static int mGyShakeSpeed = 50;
+    private static int mGyProxyTime = 10;
+
+    private static int mGyStep = 1;
 
     public static void init(MapActivity app) {
         mApp = app;
@@ -93,4 +99,43 @@ public class Settings {
         return BASE64_PUBLIC_KEY;
     }
 
+    public static int getmGyDelayTime() {
+        return mGyDelayTime;
+    }
+
+    public static void setmGyDelayTime(int mGyDelayTime) {
+        Settings.mGyDelayTime = mGyDelayTime;
+    }
+
+    public static int getmGyShakeSpeed() {
+        return mGyShakeSpeed;
+    }
+
+    public static void setmGyShakeSpeed(int mGyShakeSpeed) {
+        Settings.mGyShakeSpeed = mGyShakeSpeed;
+    }
+
+    public static int getmGyProxyTime() {
+        return mGyProxyTime;
+    }
+
+    public static void setmGyProxyTime(int mGyProxyTime) {
+        Settings.mGyProxyTime = mGyProxyTime;
+    }
+
+    public static int getmGyRotSpeed() {
+        return mGyRotSpeed;
+    }
+
+    public static void setmGyRotSpeed(int mGyRotSpeed) {
+        Settings.mGyRotSpeed = mGyRotSpeed;
+    }
+
+    public static int getmGyStep() {
+        return mGyStep;
+    }
+
+    public static void setmGyStep(int mGyStep) {
+        Settings.mGyStep = mGyStep;
+    }
 }

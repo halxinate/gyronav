@@ -3,5 +3,7 @@
     <string name="title_activity_map">Map</string>
     <string name="appdir">gyronav</string>
     <string name="tempfname">.tempgyronav</string>
-    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyDNgmdYxFxbvhR7Pg8aJS3SbNiBIhYd6Ew</string>
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyBk-0qxPlRlWG20pGnimdZSyCBz2XfZKPs</string>
+    <string name="s_arrowlt">\u003c</string>
+    <string name="s_arrowrt">\u003e</string>
 </resources>
