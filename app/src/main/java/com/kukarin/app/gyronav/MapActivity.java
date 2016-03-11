@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -100,6 +101,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         findViewById(R.id.bnMinus).setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
+                vib();
                 if(mCurSetting==4) //Side, looping
                     if(mCurValue==1) mCurValue = 5;
                 mCurValue-= Set.getmGyStep();
@@ -110,6 +112,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         findViewById(R.id.bnPlus).setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
+                vib();
                 if(mCurSetting==4) //Side, looping
                     if(mCurValue==4) mCurValue = 0;
 
@@ -122,6 +125,11 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         //Other
         updateHelpButton();
         ///registerBroadcastReceiver(true);
+    }
+
+    private void vib() {
+        ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(70);;
+
     }
 
     /**
@@ -337,6 +345,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private void screenOff(boolean turnoff) {
         showCenterMessage(turnoff);
         if(turnoff) { //initiate screen off timer
+            vib();
             scrOffwaiter = new ScreenOffWaiter();
             scrOffwaiter.execute("");
         } //stop screen off timer
@@ -348,6 +357,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
 
     private void showLooper(boolean show){
+        vib();
         findViewById(R.id.loopmenu).setVisibility(show ? View.VISIBLE : View.GONE);
         showMode(!show);
         if(!show) mGyroModeCounter = 0;
@@ -363,6 +373,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
      * @param i
      */
     private void switchMap(int i) {
+        vib();
         mMapTypeSwitch = loopValue(mMapTypeSwitch, i, mapTypes.length);
         mMap.setMapType(mapTypes[mMapTypeSwitch]);
     }
@@ -430,6 +441,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
     private void zoomMap(int i) {
         if(mMap==null) return;
+        vib();
         if(i>0){
             mMap.animateCamera(CameraUpdateFactory.zoomIn(), 200, null);
         }
@@ -441,6 +453,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
     private void moveMap(int x, int y) {
         if(mMap==null) return;
+        vib();
         CameraUpdate cu = CameraUpdateFactory.scrollBy(mStepX * x, mStepY * y);
         //mMap.moveCamera(cu);
         mMap.animateCamera(cu, 200, null);
