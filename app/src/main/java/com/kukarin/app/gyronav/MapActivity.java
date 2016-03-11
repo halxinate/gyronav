@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
+import android.provider.Settings;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
@@ -13,6 +14,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -28,6 +30,8 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.kukarin.app.gyronav.sensor.SensorsService;
 
+import java.util.Calendar;
+
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback {
     private static final String TAG = "MapActivity";
 
@@ -36,7 +40,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private GoogleMap mMap;
     private float mStepX=1, mStepY=1;
     private int mMenuSelection = 0;
-    private int[] mMenuChecks = {R.id.m_rspeed, R.id.m_btime, R.id.m_shspeed, R.id.m_proxtime };
+    private int[] mMenuChecks = {R.id.m_rspeed, R.id.m_btime, R.id.m_accmax, R.id.m_acctime, R.id.m_acctop};
     private int mCurValue = -1;
     private int mCurSetting = -1; //inactive initially
     private int mGyroMode = 0; //loopmenu selection
@@ -53,12 +57,29 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
     private HideLooperLater loopHider = null;
 
+    //Screen OFF members
+    private ScreenOffWaiter scrOffwaiter = null;
+    ///private PowerManager mPowerManager;
+    ///private PowerManager.WakeLock mWakeLock;
+    ///private int field = 0x00000020;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
         Busy.getInstance().setContext(this);
-        Settings.init(this);
+        Set.init(this);
+
+        /*/Screen on/off control
+        try {
+            // Yeah, this is hidden field.
+            field = PowerManager.class.getField("PROXIMITY_SCREEN_OFF_WAKE_LOCK").getInt(null);
+        } catch (Throwable ignored) {
+        }
+        mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        mWakeLock = mPowerManager.newWakeLock(field, getLocalClassName());
+        */
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -79,7 +100,9 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         findViewById(R.id.bnMinus).setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCurValue-=Settings.getmGyStep();
+                if(mCurSetting==4) //Side, looping
+                    if(mCurValue==1) mCurValue = 5;
+                mCurValue-= Set.getmGyStep();
                 setSettings();
                 setControlValue();
             }
@@ -87,7 +110,10 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         findViewById(R.id.bnPlus).setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCurValue += Settings.getmGyStep();
+                if(mCurSetting==4) //Side, looping
+                    if(mCurValue==4) mCurValue = 0;
+
+                mCurValue += Set.getmGyStep();
                 setSettings();
                 setControlValue();
             }
@@ -106,19 +132,23 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private void setSettings() {
         switch (mCurSetting) {
             case 0:
-                Settings.setmGyRotSpeed(mCurValue);
+                Set.setmGyRotSpeed(mCurValue);
                 updateMenuItemText();
                 break;
             case 1:
-                Settings.setmGyDelayTime(mCurValue);
+                Set.setmGyDelayTime(mCurValue);
                 updateMenuItemText();
                 break;
             case 2:
-                Settings.setmGyShakeSpeed(mCurValue);
+                Set.setmAccMin(mCurValue);
                 updateMenuItemText();
                 break;
             case 3:
-                Settings.setmGyProxyTime(mCurValue);
+                Set.setmAccTime(mCurValue);
+                updateMenuItemText();
+                break;
+            case 4:
+                Set.setmAccTop(mCurValue);
                 updateMenuItemText();
                 break;
         }
@@ -131,16 +161,16 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private void getSettings() {
         switch(mCurSetting){
             case 0:
-                mCurValue = Settings.getmGyRotSpeed();
+                mCurValue = Set.getmGyRotSpeed();
                 break;
             case 1:
-                mCurValue = Settings.getmGyDelayTime();
+                mCurValue = Set.getmGyDelayTime();
                 break;
             case 2:
-                mCurValue = Settings.getmGyShakeSpeed();
+                mCurValue = Set.getmAccMin();
                 break;
             case 3:
-                mCurValue = Settings.getmGyProxyTime();
+                mCurValue = Set.getmAccTime();
                 break;
         }
     }
@@ -152,9 +182,19 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         if(popupMenu!=null) {
             MenuItem i = popupMenu.getMenu().getItem(mCurSetting);
             String t = (String) i.getTitle();
-            t = t.substring(0, t.indexOf("[")) + "[" + mCurValue / 10f + "]";
+            if(mCurSetting==4) //side text
+                t = t.substring(0, t.indexOf("[")) + "[" + getSideName(mCurValue) + "]";
+            else
+                t = t.substring(0, t.indexOf("[")) + "[" + mCurValue / 10f + "]";
             i.setTitle(t);
         }
+    }
+
+    private String getSideName(int v) {
+        final String[] sides = {"top","right","bottom", "left"};
+        if(v<1) v = 1;
+        else if(v>4) v = 4;
+        return sides[v-1];
     }
 
     @Override
@@ -173,7 +213,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private void registerBroadcastReceiver(boolean register){
         if(register) {
             LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
-                    new IntentFilter(Settings.BROADCASTFILTER));
+                    new IntentFilter(Set.BROADCASTFILTER));
         }
         else {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
@@ -189,7 +229,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
     private void handleMessage(Intent msg) {
         Bundle data = msg.getExtras();
-        switch (data.getInt(Settings.EXID_GESTURE, 0)) {
+        switch (data.getInt(Set.EXID_GESTURE, 0)) {
             //GYRO ----------------------------------------
             case 1: //Up
                 showLooper(false);
@@ -254,35 +294,57 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                 break;
             case 5: //rotate CW
                 gyroModeSwitch(-1);
+                screenOff(false);
                 break;
             case 6: //rotate CCW
                 gyroModeSwitch(1);
+                screenOff(false);
                 break;
             case 10: // proximity ----------------------------
                 break;
             // ACCELL ----------------------------------------
-            case 11: //Y Up
-                moveMap(0, 1);
+            case 11: //Y Top side up
+                screenOff(Set.getmAccTop()==1);
                 break;
-            case 12: //X Rt
-                moveMap(1, 0);
+            case 12: //X Rt side up
+                screenOff(Set.getmAccTop()==2);
                 break;
-            case 13: //Y Dn
-                moveMap(0, -1);
+            case 13: //Y bottom side up
+                screenOff(Set.getmAccTop()==3);
                 break;
-            case 14: //X Left
-                moveMap(-1, 0);
+            case 14: //X Left Side up
+                screenOff(Set.getmAccTop()==4);
                 break;
-            case 15: //Z Out
-                zoomMap(-1);
+            case 15: //Z Face down
+                screenOff(false);
                 break;
-            case 16: //Z In
-                zoomMap(1);
+            case 16: //Z Face up
+                screenOff(false);
+                break;
+            case 100: //Wake UP!
+                screenOff(false);
+                Log.d(TAG, "got 100");
                 break;
             default:
                 return; //if 0 or other don't process
         }
+    }
 
+    /**
+     * Trigger or cancell Asynctask with delayed screen off command
+     * @param turnoff
+     */
+    private void screenOff(boolean turnoff) {
+        showCenterMessage(turnoff);
+        if(turnoff) { //initiate screen off timer
+            scrOffwaiter = new ScreenOffWaiter();
+            scrOffwaiter.execute("");
+        } //stop screen off timer
+        else if(scrOffwaiter!=null) scrOffwaiter.cancel(true);
+    }
+
+    private void showCenterMessage(boolean show) {
+        findViewById(R.id.tv_centermessage).setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     private void showLooper(boolean show){
@@ -315,7 +377,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             showLooper(true);
             loopHider = new HideLooperLater();
             loopHider.execute(""); //hide looper after a while
-            Log.d(TAG, "1 mGm="+mGyroMode);
+            Log.d(TAG, "1 mGm=" + mGyroMode);
             return;
         }
 
@@ -402,11 +464,31 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         if (code != ConnectionResult.SUCCESS) { //No google connection for map
             GooglePlayServicesUtil.getErrorDialog(code, this, 0).show();
         }
+
+        Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 120*1000);
+
+        //make proximity sensor turn off the screen
+        ///if(!mWakeLock.isHeld()) {
+        ///    mWakeLock.acquire();
+        ///}
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                ///| WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
+        showCenterMessage(false); //reset on autosleep
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        //turn off proximity sensing
+        ///if(mWakeLock.isHeld()) {
+        ///    mWakeLock.release();
+        ///}
+
+        //TODO put service to sleep as well! or not?
     }
 
     private void getDisplaySize() {
@@ -436,15 +518,15 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
-            case Settings.RESRET_FILE_SELECTOR: //New file is selected
+            case Set.RESRET_FILE_SELECTOR: //New file is selected
                 if (resultCode == RESULT_OK) {
 
                 }
                 break;
-            case Settings.RESRET_EXTRAPOL:
-                if (data.hasExtra(Settings.EXID_TARGETTIME)) {
-                    String targetTime = data.getStringExtra(Settings.EXID_TARGETTIME);
-                    boolean recStart = data.getBooleanExtra(Settings.EXID_TARGETSTART, false);
+            case Set.RESRET_EXTRAPOL:
+                if (data.hasExtra(Set.EXID_TARGETTIME)) {
+                    String targetTime = data.getStringExtra(Set.EXID_TARGETTIME);
+                    boolean recStart = data.getBooleanExtra(Set.EXID_TARGETSTART, false);
                     int flags = 0;
                 }
                 break;
@@ -494,7 +576,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                         if (menuToggle(item)) {
                             if(mCurSetting<0) showGauge();
                             mCurSetting = 0;
-                            mCurValue = Settings.getmGyRotSpeed();
+                            mCurValue = Set.getmGyRotSpeed();
                             setControlValue();
                             setControlText();
                         }
@@ -503,25 +585,34 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                         if (menuToggle(item)) {
                             if(mCurSetting<0) showGauge();
                             mCurSetting = 1;
-                            mCurValue = Settings.getmGyDelayTime();
+                            mCurValue = Set.getmGyDelayTime();
                             setControlValue();
                             setControlText();
                         }
                         break;
-                    case R.id.m_shspeed:
+                    case R.id.m_accmax:
                         if (menuToggle(item)) {
                             if(mCurSetting<0) showGauge();
                             mCurSetting = 2;
-                            mCurValue = Settings.getmGyShakeSpeed();
+                            mCurValue = Set.getmAccMin();
                             setControlValue();
                             setControlText();
                         }
                         break;
-                    case R.id.m_proxtime:
+                    case R.id.m_acctime:
                         if (menuToggle(item)) {
                             if(mCurSetting<0) showGauge();
                             mCurSetting = 3;
-                            mCurValue = Settings.getmGyProxyTime();
+                            mCurValue = Set.getmAccTime();
+                            setControlValue();
+                            setControlText();
+                        }
+                        break;
+                    case R.id.m_acctop:
+                        if (menuToggle(item)) {
+                            if(mCurSetting<0) showGauge();
+                            mCurSetting = 4;
+                            mCurValue = Set.getmAccTop();
                             setControlValue();
                             setControlText();
                         }
@@ -529,6 +620,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                     case R.id.m_hide:
                         hideGauge();
                         break;
+
                 }
                 return true;
             }
@@ -536,7 +628,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         popupMenu.inflate(R.menu.popup_menu);
 
         int temp = mCurSetting;
-        for(int i=0;i<4;i++) { //set menu items text
+        for(int i=0;i<mMenuChecks.length;i++) { //set menu items text
             mCurSetting = i;
             getSettings(); //mCurVal is now having val from Settings
             updateMenuItemText();
@@ -573,7 +665,11 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
      * Set the text of the value on the screen
      */
     private void setControlValue() {
-        ((TextView)findViewById(R.id.tv_gauge1)).setText(String.format("%.1f", mCurValue/10f));
+        if(mCurSetting==4) //side name
+            ((TextView) findViewById(R.id.tv_gauge1)).setText(getSideName(mCurValue));
+        else
+            ((TextView)findViewById(R.id.tv_gauge1)).setText(String.format("%.1f", mCurValue/10f));
+        Log.d(TAG, "Cv="+ mCurValue);
     }
 
     /**
@@ -610,34 +706,42 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private class HideLooperLater extends AsyncTask<String, Void, String> {
         private final int maxloops = 6;
         int loops;
-
+        @Override protected void onPreExecute() {  }
+        @Override protected void onProgressUpdate(Void... values) { }
         @Override
         protected String doInBackground(String... params) {
-            for(loops=maxloops; loops>0; loops--) { //~5 sec
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+            for(loops=maxloops; loops>0; loops--) //~5 sec
+                try { Thread.sleep(1000); }
+                catch (InterruptedException e) { e.printStackTrace(); }
             return null;
         }
-
         @Override
         protected void onPostExecute(String result) {
             showLooper(false);
         }
-
-        @Override
-        protected void onPreExecute() {
-        }
-
-        @Override
-        protected void onProgressUpdate(Void... values) {
-        }
-
         public void prolong() {
             loops = maxloops;
+        }
+    }
+
+    private class ScreenOffWaiter extends AsyncTask<String, Void, String> {
+        private final int maxloops = Set.getmAccTime(); //in 0.1 secs
+        @Override protected void onPreExecute() {  }
+        @Override protected void onProgressUpdate(Void... values) { }
+        @Override protected void onCancelled() { }
+        @Override
+        protected String doInBackground(String... params) {
+            for(int loops=maxloops; loops>0; loops--) //~5 sec
+                try {
+                    Thread.sleep(100);
+                    if(isCancelled()) finalize();
+                }
+                catch (Throwable e) { e.printStackTrace(); }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(String result) {
+            Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 10);
         }
     }
 

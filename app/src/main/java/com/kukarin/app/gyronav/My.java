@@ -67,11 +67,11 @@ public class My {
     }
 
     public static String Date2String(Date time) {
-        DateFormat df = new SimpleDateFormat(Settings.DATETIMEFORMAT);
+        DateFormat df = new SimpleDateFormat(Set.DATETIMEFORMAT);
         return df.format(time);
     }
     public static Date String2Date(String dateString) {
-        DateFormat df = new SimpleDateFormat(Settings.DATETIMEFORMAT);
+        DateFormat df = new SimpleDateFormat(Set.DATETIMEFORMAT);
         Date convertedDate = new Date();
         try {
             convertedDate = df.parse(dateString);

@@ -14,11 +14,14 @@
             android:id="@+id/m_btime"
             android:title="Blocking time\t[" />
         <item
-            android:id="@+id/m_shspeed"
-            android:title="Shaking speed\t[" />
+            android:id="@+id/m_accmax"
+            android:title="Gravity pull\t[" />
         <item
-            android:id="@+id/m_proxtime"
-            android:title="Proximity time\t[" />
+            android:id="@+id/m_acctime"
+            android:title="Hanging time\t[" />
+        <item
+            android:id="@+id/m_acctop"
+            android:title="Sleep side top\t[" />
     </group>
     <item
         android:id="@+id/m_hide"

@@ -192,5 +192,19 @@
         android:paddingLeft="8dp"
         android:paddingRight="8dp" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Going to sleep\nin this position.\nChange it to prevent."
+        android:id="@+id/tv_centermessage"
+        android:layout_gravity="center"
+        android:background="#000000"
+        android:padding="@dimen/padding_large"
+        android:alpha="0.7"
+        android:textColor="#ffffff"
+        android:textAlignment="center"
+        android:textSize="@dimen/centermessage_fontsize"
+        android:visibility="gone" />
+
 </FrameLayout>
 

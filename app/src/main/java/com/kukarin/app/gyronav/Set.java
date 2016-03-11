@@ -7,7 +7,7 @@ import java.io.File;
 /**
  * Created by alexk on 2/9/2016.
  */
-public class Settings {
+public class Set {
 
     private static final String TAG = "Settings";
     public static final String BROADCASTFILTER = "com.kukarin.gpxedit.sensor.communication.GESTURE_EVENT";;
@@ -37,10 +37,10 @@ public class Settings {
     public static final String DATETIMEFORMAT = "yyyy/MM/dd HH:mm:ss";
     private static int mGyRotSpeed = 70 ;
     private static int mGyDelayTime = 6;
-    private static int mGyShakeSpeed = 50;
-    private static int mGyProxyTime = 10;
-
+    private static int mAccMin = 96;
+    private static int mAccTime = 30;
     private static int mGyStep = 1;
+    private static int mAccTop = 4; //(mine right side up)
 
     public static void init(MapActivity app) {
         mApp = app;
@@ -102,40 +102,42 @@ public class Settings {
     public static int getmGyDelayTime() {
         return mGyDelayTime;
     }
-
     public static void setmGyDelayTime(int mGyDelayTime) {
-        Settings.mGyDelayTime = mGyDelayTime;
+        Set.mGyDelayTime = mGyDelayTime;
     }
 
-    public static int getmGyShakeSpeed() {
-        return mGyShakeSpeed;
+    public static int getmAccMin() {
+        return mAccMin;
+    }
+    public static void setmAccMin(int mAccMin) {
+        Set.mAccMin = mAccMin;
     }
 
-    public static void setmGyShakeSpeed(int mGyShakeSpeed) {
-        Settings.mGyShakeSpeed = mGyShakeSpeed;
+    public static int getmAccTime() {
+        return mAccTime;
     }
-
-    public static int getmGyProxyTime() {
-        return mGyProxyTime;
-    }
-
-    public static void setmGyProxyTime(int mGyProxyTime) {
-        Settings.mGyProxyTime = mGyProxyTime;
+    public static void setmAccTime(int mAccTime) {
+        Set.mAccTime = mAccTime;
     }
 
     public static int getmGyRotSpeed() {
         return mGyRotSpeed;
     }
-
     public static void setmGyRotSpeed(int mGyRotSpeed) {
-        Settings.mGyRotSpeed = mGyRotSpeed;
+        Set.mGyRotSpeed = mGyRotSpeed;
     }
 
     public static int getmGyStep() {
         return mGyStep;
     }
-
     public static void setmGyStep(int mGyStep) {
-        Settings.mGyStep = mGyStep;
+        Set.mGyStep = mGyStep;
+    }
+
+    public static int getmAccTop() {
+        return mAccTop;
+    }
+    public static void setmAccTop(int v) {
+        Set.mAccTop = v;
     }
 }

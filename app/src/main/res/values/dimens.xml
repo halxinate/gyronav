@@ -5,4 +5,6 @@
     <dimen name="gauge_width">90dp</dimen>
     <dimen name="scroller_item_width">100dp</dimen>
     <dimen name="scroller_item_height">60dp</dimen>
+    <dimen name="padding_large">24dp</dimen>
+    <dimen name="centermessage_fontsize">18dp</dimen>
 </resources>

@@ -1,18 +1,19 @@
 package com.kukarin.app.gyronav.sensor;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.IBinder;
-import android.os.Vibrator;
+import android.os.PowerManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.kukarin.app.gyronav.Settings;
+import com.kukarin.app.gyronav.Set;
 
 /**
  * Created by Alex on 3/4/2016.
@@ -39,6 +40,23 @@ public class SensorsService extends Service {
     private int mIsZMoveStarted = 0;
     private long accTimeStamp = 0;
 
+    private PowerManager.WakeLock wl;
+    private void wakeUp() {
+        //lock = ((KeyguardManager) getSystemService(Activity.KEYGUARD_SERVICE)).newKeyguardLock(KEYGUARD_SERVICE);
+        PowerManager powerManager = ((PowerManager) getSystemService(Context.POWER_SERVICE));
+        wl = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "TAG");
+
+        //lock.disableKeyguard();
+        wl.acquire();
+        ///sendEvent(100); not catched anyway
+        wl.release();
+        /*
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "bbbb");
+        wl.acquire();
+        wl.release();
+        */
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -68,8 +86,12 @@ public class SensorsService extends Service {
         sensorManager.registerListener(listen, gyro, SensorManager.SENSOR_DELAY_UI);
     }
 
+    /**
+     * Accelerometer is used to detect the gravity vector (device base orientation).
+     *  ALL VALUES ARE *10 actual
+     * @param event
+     */
     private void getAccelerometer(SensorEvent event) {
-        /*
         float[] values = event.values;
         // Movement
         float axisX = values[0];
@@ -78,8 +100,8 @@ public class SensorsService extends Service {
 
         //Log.i(TAG, "("+axisX+"|"+axisY+"|"+axisZ+")");
 
-        float fastMove = 5f;
-        float timeDelta = 0.6f;
+        float fastMove = Set.getmAccMin()/10f;    //About G
+        float timeDelta = Set.getmAccTime()/10f; //how long considered it's settled
 
         float movXabs = 0, movYabs = 0, movZabs = 0;
         int movXsig = 0, movYsig = 0, movZsig = 0;
@@ -108,31 +130,38 @@ public class SensorsService extends Service {
             movZsig = -1;
         }
 
-        //Log.d(TAG, "X="+axisX);
-        int cmd = mIsXMoveStarted + mIsYMoveStarted + mIsZMoveStarted;
+        if (movXsig == 0 && movYsig == 0 && movZsig == 0)
+            return; //most likely the device is in motion, gravity is splet among other axiss
 
-        //rotation is too slow => either none, or stopped
-        if (movXsig == 0 && movYsig == 0 && movZsig == 0) {
-            if (cmd > 0) { //something already started rotating, so this is end of that move
-                if((event.timestamp-accTimeStamp)* NS2S > timeDelta) //don't register too fast events
-                    sendEvent(cmd);
-                mIsXMoveStarted = mIsYMoveStarted = mIsZMoveStarted = 0; //reset command
-                accTimeStamp = event.timestamp;
-            }
-            return;
-        }
-        mCount++;
-        // else fast enough rotation detected
-        if (cmd == 0) //Nothing rotated yet, check which axis is rotating fastest
-            Log.i(TAG, "<"+movXsig+"|"+movYsig+"|"+movZsig+">");
+        //some vector grown large enough. Find which, but report only that's a new one,
+        // if new one - reset the others for the next check
+
+        int cmd = 0;
         if (movXabs > movYabs && movXabs > movZabs) {
-            if (mIsXMoveStarted == 0) mIsXMoveStarted = movXsig > 0 ? 12 : 14;  //   1
-        } else if (movYabs > movXabs && movYabs > movZabs) {                //4     2
-            if (mIsYMoveStarted == 0) mIsYMoveStarted = movYsig > 0 ? 11 : 13;  //   3
-        } else if (movZabs > movXabs && movZabs > movYabs) {                // CCW  6
-            if (mIsZMoveStarted == 0) mIsZMoveStarted = movZsig > 0 ? 16 : 15;  // CW   5
+            if(mIsXMoveStarted==0){
+                mIsXMoveStarted = movXsig > 0 ? 12 : 14;
+                mIsYMoveStarted = 0;
+                mIsZMoveStarted = 0;
+                cmd = mIsXMoveStarted;
+            }
+        } else if (movYabs > movXabs && movYabs > movZabs) {
+            if(mIsYMoveStarted==0) {
+                mIsYMoveStarted = movYsig > 0 ? 11 : 13;
+                mIsXMoveStarted = 0;
+                mIsZMoveStarted = 0;
+                cmd = mIsYMoveStarted;
+            }
+        } else if (movZabs > movXabs && movZabs > movYabs) {
+            if(mIsZMoveStarted==0) {
+                mIsZMoveStarted = movZsig > 0 ? 16 : 15;
+                mIsYMoveStarted = 0;
+                mIsXMoveStarted = 0;
+                cmd = mIsZMoveStarted;
+                if(cmd==16) //ToDO Dirty here wake the device
+                    wakeUp();
+            }
         }
-        */
+        if(cmd>0) sendEvent(cmd);
 
         /* ORIG INTERPOL
         float accelationSquareRoot = (x * x + y * y + z * z)
@@ -166,8 +195,8 @@ public class SensorsService extends Service {
             float axisX = event.values[0];
             float axisY = event.values[1];
             float axisZ = event.values[2];
-            float timeDelta = Settings.getmGyDelayTime()/10f;// 0.6fsec
-            float fastRotation = Settings.getmGyRotSpeed()/10f; //3.5f; //rad/sec
+            float timeDelta = Set.getmGyDelayTime()/10f;// 0.6fsec
+            float fastRotation = Set.getmGyRotSpeed()/10f; //3.5f; //rad/sec
             float rotXabs = 0, rotYabs = 0, rotZabs = 0;
             int rotXsig = 0, rotYsig = 0, rotZsig = 0;
             if (axisX > fastRotation) {
@@ -265,8 +294,8 @@ public class SensorsService extends Service {
      */
     private void sendEvent(int cmd) {
         Log.d("sender", "B: " + cmd);
-        Intent intent = new Intent(Settings.BROADCASTFILTER);
-        intent.putExtra(Settings.EXID_GESTURE, cmd);
+        Intent intent = new Intent(Set.BROADCASTFILTER);
+        intent.putExtra(Set.EXID_GESTURE, cmd);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
