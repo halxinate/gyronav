@@ -271,6 +271,7 @@ public class MapActivity extends FragmentActivity implements
                         switchMap(1);
                         break;
                     case MODEWAYPO: //waypoins
+                        addMarker();
                         break;
                 }
                 break;
@@ -355,6 +356,31 @@ public class MapActivity extends FragmentActivity implements
             default:
                 return; //if 0 or other don't process
         }
+    }
+
+    private void addMarker() {
+        MarkerOptions options = new MarkerOptions();
+
+        // following four lines requires 'Google Maps Android API Utility Library'
+        // https://developers.google.com/maps/documentation/android/utility/
+        // I have used this to display the time as title for location markers
+        // you can safely comment the following four lines but for this info
+        /*
+        IconGenerator iconFactory = new IconGenerator(this);
+        iconFactory.setStyle(IconGenerator.STYLE_PURPLE);
+        options.icon(BitmapDescriptorFactory.fromBitmap(iconFactory.makeIcon(mLastUpdateTime)));
+        options.anchor(iconFactory.getAnchorU(), iconFactory.getAnchorV());
+        */
+        LatLng currentLatLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+        options.position(currentLatLng);
+        Marker mapMarker = mMap.addMarker(options);
+        long atTime = mCurrentLocation.getTime();
+        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date(atTime));
+        mapMarker.setTitle(mLastUpdateTime);
+        Log.d(TAG, "Marker added.............................");
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLatLng));
+        Log.d(TAG, "Zoom done.............................");
+
     }
 
     /**
