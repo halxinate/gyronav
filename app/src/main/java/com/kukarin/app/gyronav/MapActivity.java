@@ -8,7 +8,6 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.AsyncTask;
-import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -26,11 +25,7 @@ import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -42,7 +37,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.kukarin.app.gyronav.sensor.SensorsService;
 
 import java.text.DateFormat;
-import java.util.Calendar;
 import java.util.Date;
 
 public class MapActivity extends FragmentActivity implements
@@ -76,19 +70,16 @@ public class MapActivity extends FragmentActivity implements
 
     //Screen OFF members
     private ScreenOffWaiter scrOffwaiter = null;
+    private boolean mGyroDelayedOff = false;
     ///private PowerManager mPowerManager;
     ///private PowerManager.WakeLock mWakeLock;
     ///private int field = 0x00000020;
 
     //GPS
+    private GPS mGPS;
     private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 89;
-    private LocationRequest mLocationRequest;
-    private static final long INTERVAL = 1000 * 30;
-    private static final long FASTEST_INTERVAL = 1000 * 10;
-    private GoogleApiClient mGoogleApiClient;
     private Location mCurrentLocation;
     private String mLastUpdateTime;
-    private boolean mIsGPSpermissionGranted = true;
 
 
     @Override
@@ -99,17 +90,12 @@ public class MapActivity extends FragmentActivity implements
         if (!isGooglePlayServicesAvailable()) {
             finish();
         }
-        createLocationRequest();
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addApi(LocationServices.API)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .build();
-
 
         setContentView(R.layout.activity_map);
         Busy.getInstance().setContext(this);
         Set.init(this);
+
+        mGPS = new GPS(this);
 
         /*/Screen on/off control
         try {
@@ -140,7 +126,7 @@ public class MapActivity extends FragmentActivity implements
         findViewById(R.id.bnMinus).setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                vib();
+                My.vib(1);
                 if (mCurSetting == 4) //Side, looping
                     if (mCurValue == 1) mCurValue = 5;
                 mCurValue -= Set.getmGyStep();
@@ -151,7 +137,7 @@ public class MapActivity extends FragmentActivity implements
         findViewById(R.id.bnPlus).setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                vib();
+                My.vib(1);
                 if (mCurSetting == 4) //Side, looping
                     if (mCurValue == 4) mCurValue = 0;
 
@@ -164,18 +150,6 @@ public class MapActivity extends FragmentActivity implements
         //Other
         updateHelpButton();
         ///registerBroadcastReceiver(true);
-    }
-
-    private void vib() {
-        ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(70);
-        ;
-    }
-
-    protected void createLocationRequest() {
-        mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(INTERVAL);
-        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
     /**
@@ -285,7 +259,7 @@ public class MapActivity extends FragmentActivity implements
         switch (data.getInt(Set.EXID_GESTURE, 0)) {
             //GYRO ----------------------------------------
             case 1: //Up
-                showLooper(false);
+                showGyroMenu(false);
                 switch (mGyroMode) {
                     case MODESCROLL: //Scroll
                         moveMap(0, 1);
@@ -301,7 +275,7 @@ public class MapActivity extends FragmentActivity implements
                 }
                 break;
             case 2: //Rt //
-                showLooper(false);
+                showGyroMenu(false);
                 switch (mGyroMode) {
                     case MODESCROLL: //Scroll
                         moveMap(1, 0);
@@ -315,7 +289,7 @@ public class MapActivity extends FragmentActivity implements
                 }
                 break;
             case 3: //Dn
-                showLooper(false);
+                showGyroMenu(false);
                 switch (mGyroMode) {
                     case MODESCROLL: //Scroll
                         moveMap(0, -1);
@@ -331,7 +305,7 @@ public class MapActivity extends FragmentActivity implements
                 }
                 break;
             case 4: //Lt
-                showLooper(false);
+                showGyroMenu(false);
                 switch (mGyroMode) {
                     case MODESCROLL: //Scroll
                         moveMap(-1, 0);
@@ -388,9 +362,12 @@ public class MapActivity extends FragmentActivity implements
      * @param turnoff
      */
     private void screenOff(boolean turnoff) {
+        if(turnoff && mGyroModeCounter>0) {
+            mGyroDelayedOff = true;
+            return; //Dont sleep if gyro menu on
+        }
         showCenterMessage(turnoff);
         if (turnoff) { //initiate screen off timer
-            vib();
             scrOffwaiter = new ScreenOffWaiter();
             scrOffwaiter.execute("");
         } //stop screen off timer
@@ -401,14 +378,18 @@ public class MapActivity extends FragmentActivity implements
         findViewById(R.id.tv_centermessage).setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
-    private void showLooper(boolean show) {
-        vib();
+    private void showGyroMenu(boolean show) {
+        My.vib(1);
         findViewById(R.id.loopmenu).setVisibility(show ? View.VISIBLE : View.GONE);
-        showMode(!show);
-        if (!show) mGyroModeCounter = 0;
+        showModeText(!show);
+        if (!show) {
+            mGyroModeCounter = 0;
+            if(mGyroDelayedOff) screenOff(true);
+            mGyroDelayedOff = false;
+        }
     }
 
-    private void showMode(boolean b) {
+    private void showModeText(boolean b) {
         findViewById(R.id.tv_mode).setVisibility(b ? View.VISIBLE : View.GONE);
     }
 
@@ -418,7 +399,7 @@ public class MapActivity extends FragmentActivity implements
      * @param i
      */
     private void switchMap(int i) {
-        vib();
+        My.vib(1);
         mMapTypeSwitch = loopValue(mMapTypeSwitch, i, mapTypes.length);
         mMap.setMapType(mapTypes[mMapTypeSwitch]);
     }
@@ -430,13 +411,14 @@ public class MapActivity extends FragmentActivity implements
     private void gyroModeSwitch(int i) {
         if (mGyroModeCounter == 0) { //first rotate brings up the menu
             mGyroModeCounter = 1;
-            showLooper(true);
+            showGyroMenu(true);
             loopHider = new HideLooperLater();
             loopHider.execute(""); //hide looper after a while
             Log.d(TAG, "1 mGm=" + mGyroMode);
             return;
         }
 
+        My.vib(1);
         //second rotate - move the menu
         if (loopHider != null) loopHider.prolong();
         int sz = gyroModes.length;
@@ -486,7 +468,7 @@ public class MapActivity extends FragmentActivity implements
 
     private void zoomMap(int i) {
         if (mMap == null) return;
-        vib();
+        My.vib(1);
         if (i > 0) {
             mMap.animateCamera(CameraUpdateFactory.zoomIn(), 200, null);
         } else {
@@ -497,7 +479,7 @@ public class MapActivity extends FragmentActivity implements
 
     private void moveMap(int x, int y) {
         if (mMap == null) return;
-        vib();
+        My.vib(1);
         CameraUpdate cu = CameraUpdateFactory.scrollBy(mStepX * x, mStepY * y);
         //mMap.moveCamera(cu);
         mMap.animateCamera(cu, 200, null);
@@ -506,13 +488,13 @@ public class MapActivity extends FragmentActivity implements
     @Override
     protected void onStart() {
         super.onStart();
-        mGoogleApiClient.connect();
+        mGPS.connect();
         registerBroadcastReceiver(true);
     }
 
     @Override
     protected void onStop() {
-        mGoogleApiClient.disconnect();
+        mGPS.disconnect();
         registerBroadcastReceiver(false);
         super.onStop();
     }
@@ -520,29 +502,13 @@ public class MapActivity extends FragmentActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-
-        if (mGoogleApiClient.isConnected()) {
-            startLocationUpdates();
-            Log.d(TAG, "Location update resumed .....................");
-        }
+        mGPS.startLocationUpdates();
 
         int code = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
         if (code != ConnectionResult.SUCCESS) { //No google connection for map
             GooglePlayServicesUtil.getErrorDialog(code, this, 0).show();
         }
-
-        Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 120 * 1000);
-
-        //make proximity sensor turn off the screen
-        ///if(!mWakeLock.isHeld()) {
-        ///    mWakeLock.acquire();
-        ///}
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-                | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-                ///| WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-                | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
+        restoreScreenParameters();
         showCenterMessage(false); //reset on autosleep
     }
 
@@ -554,9 +520,27 @@ public class MapActivity extends FragmentActivity implements
         ///    mWakeLock.release();
         ///}
 
-        stopLocationUpdates();
+        mGPS.stopLocationUpdates();
 
         //TODO put service to sleep as well! or not?
+    }
+
+    /**
+     * After autosleep need to restore some parameters on gyro wake up
+     */
+    private void restoreScreenParameters() {
+        Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, Set.getOriginalTimeout());
+
+        //make proximity sensor turn off the screen
+        ///if(!mWakeLock.isHeld()) {
+        ///    mWakeLock.acquire();
+        ///}
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                ///| WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
     }
 
     private void getDisplaySize() {
@@ -602,17 +586,17 @@ public class MapActivity extends FragmentActivity implements
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void showButtons(boolean b) {
-        findViewById(R.id.bnBlock).setVisibility(b ? View.VISIBLE : View.GONE);
-    }
-
+    /**
+     * After the map is loaded by API, setup its properties to display
+     * @param upMap
+     */
     public void setupMap(GoogleMap upMap) {
         mMap = upMap;
 
         // Add a marker in SFBA and move the camera
-        LatLng devhq = new LatLng(38, -122);
-        mMap.addMarker(new MarkerOptions().position(devhq).title("Dev HQ"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(devhq));
+        //LatLng devhq = new LatLng(38, -122);
+        //mMap.addMarker(new MarkerOptions().position(devhq).title("Dev HQ"));
+        //mMap.moveCamera(CameraUpdateFactory.newLatLng(devhq));
 
         mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
@@ -621,20 +605,105 @@ public class MapActivity extends FragmentActivity implements
             }
         });
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+        if(!mGPS.permitionIsGranted()) //Ask user to grant it and catch the answer
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     MY_PERMISSIONS_REQUEST_FINE_LOCATION);
-            return;
+        else
+            mMap.setMyLocationEnabled(true);
+    }
+
+    // GPS =================================================================================
+    @Override
+    public void onConnected(Bundle bundle) {
+        Log.d(TAG, "onConnected - isConnected ...............: " + mGPS.isConnected());
+        mGPS.startLocationUpdates();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.d(TAG, "Connection failed: " + connectionResult.toString());
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.d(TAG, "Firing onLocationChanged..............................................");
+        mCurrentLocation = location;
+        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
+        addLocationMarker();
+    }
+
+    private void addLocationMarker() {
+        MarkerOptions options = new MarkerOptions();
+
+        // following four lines requires 'Google Maps Android API Utility Library'
+        // https://developers.google.com/maps/documentation/android/utility/
+        // I have used this to display the time as title for location markers
+        // you can safely comment the following four lines but for this info
+        /*
+        IconGenerator iconFactory = new IconGenerator(this);
+        iconFactory.setStyle(IconGenerator.STYLE_PURPLE);
+        options.icon(BitmapDescriptorFactory.fromBitmap(iconFactory.makeIcon(mLastUpdateTime)));
+        options.anchor(iconFactory.getAnchorU(), iconFactory.getAnchorV());
+        */
+        LatLng currentLatLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+        options.position(currentLatLng);
+        Marker mapMarker = mMap.addMarker(options);
+        long atTime = mCurrentLocation.getTime();
+        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date(atTime));
+        mapMarker.setTitle(mLastUpdateTime);
+        Log.d(TAG, "Marker added.............................");
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLatLng));
+        Log.d(TAG, "Zoom done.............................");
+    }
+
+    /**
+     * GPS check
+     * @return
+     */
+    private boolean isGooglePlayServicesAvailable() {
+        int status = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
+        if (ConnectionResult.SUCCESS == status) {
+            return true;
+        } else {
+            GooglePlayServicesUtil.getErrorDialog(status, this, 0).show();
+            return false;
         }
-        mMap.setMyLocationEnabled(true);
+    }
+
+    /**
+     * Handle the permission request resulting from user input
+     * @param requestCode
+     * @param permissions
+     * @param grantResults
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    try {
+                        mMap.setMyLocationEnabled(true);
+                    }
+                    catch(Exception e) {} //permission exception, no map yet
+                } else {
+                    My.msg(TAG, "Location tracking disabled");
+                    // permission denied! Disable the functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
     }
 
     //MENU =========================================================================================
@@ -765,128 +834,6 @@ public class MapActivity extends FragmentActivity implements
         return item.isChecked();
     }
 
-    // GPS =================================================================================
-    @Override
-    public void onConnected(Bundle bundle) {
-        Log.d(TAG, "onConnected - isConnected ...............: " + mGoogleApiClient.isConnected());
-        startLocationUpdates();
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        Log.d(TAG, "Connection failed: " + connectionResult.toString());
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        Log.d(TAG, "Firing onLocationChanged..............................................");
-        mCurrentLocation = location;
-        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
-        addLocationMarker();
-    }
-
-    protected void startLocationUpdates() {
-        if(!mIsGPSpermissionGranted) return;
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        PendingResult<Status> pendingResult = LocationServices.FusedLocationApi.requestLocationUpdates(
-                mGoogleApiClient, mLocationRequest, this);
-        Log.d(TAG, "Location update started ..............: ");
-    }
-
-    protected void stopLocationUpdates() {
-        if(!mIsGPSpermissionGranted) return;
-        LocationServices.FusedLocationApi.removeLocationUpdates(
-                mGoogleApiClient, this);
-        Log.d(TAG, "Location update stopped .......................");
-    }
-
-    private void addLocationMarker() {
-        MarkerOptions options = new MarkerOptions();
-
-        // following four lines requires 'Google Maps Android API Utility Library'
-        // https://developers.google.com/maps/documentation/android/utility/
-        // I have used this to display the time as title for location markers
-        // you can safely comment the following four lines but for this info
-        /*
-        IconGenerator iconFactory = new IconGenerator(this);
-        iconFactory.setStyle(IconGenerator.STYLE_PURPLE);
-        options.icon(BitmapDescriptorFactory.fromBitmap(iconFactory.makeIcon(mLastUpdateTime)));
-        options.anchor(iconFactory.getAnchorU(), iconFactory.getAnchorV());
-        */
-        LatLng currentLatLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
-        options.position(currentLatLng);
-        Marker mapMarker = mMap.addMarker(options);
-        long atTime = mCurrentLocation.getTime();
-        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date(atTime));
-        mapMarker.setTitle(mLastUpdateTime);
-        Log.d(TAG, "Marker added.............................");
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLatLng));
-        Log.d(TAG, "Zoom done.............................");
-    }
-
-    /**
-     * GPS check
-     * @return
-     */
-    private boolean isGooglePlayServicesAvailable() {
-        int status = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
-        if (ConnectionResult.SUCCESS == status) {
-            return true;
-        } else {
-            GooglePlayServicesUtil.getErrorDialog(status, this, 0).show();
-            return false;
-        }
-    }
-
-    /**
-     * Handle the permission request from user
-     * @param requestCode
-     * @param permissions
-     * @param grantResults
-     */
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_FINE_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    mIsGPSpermissionGranted = true;
-                    mMap.setMyLocationEnabled(true);
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
-                } else {
-
-                    mIsGPSpermissionGranted = false;
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                }
-                return;
-            }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
-        }
-    }
-
     /*
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -923,7 +870,7 @@ public class MapActivity extends FragmentActivity implements
         }
         @Override
         protected void onPostExecute(String result) {
-            showLooper(false);
+            showGyroMenu(false);
         }
         public void prolong() {
             loops = maxloops;
@@ -947,6 +894,9 @@ public class MapActivity extends FragmentActivity implements
         }
         @Override
         protected void onPostExecute(String result) {
+            My.vib(2);
+            int t = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 120000);
+            Set.setOriginalTimeout(t);
             Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 10);
         }
     }

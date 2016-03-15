@@ -3,6 +3,7 @@ package com.kukarin.app.gyronav;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Vibrator;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Toast;
@@ -103,6 +104,10 @@ public class My {
         }
         return objDest;
 
+    }
+
+    public static void vib(int m) {
+        ((Vibrator) Busy.getInstance().getContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(m==1?70:300);
     }
 
 }

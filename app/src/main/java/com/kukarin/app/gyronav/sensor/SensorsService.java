@@ -137,21 +137,24 @@ public class SensorsService extends Service {
         // if new one - reset the others for the next check
 
         int cmd = 0;
-        if (movXabs > movYabs && movXabs > movZabs) {
+        //if (movXabs > movYabs && movXabs > movZabs) {
+        if (movXabs > 0 && movYabs == 0 && movZabs == 0) {
             if(mIsXMoveStarted==0){
                 mIsXMoveStarted = movXsig > 0 ? 12 : 14;
                 mIsYMoveStarted = 0;
                 mIsZMoveStarted = 0;
                 cmd = mIsXMoveStarted;
             }
-        } else if (movYabs > movXabs && movYabs > movZabs) {
+        //} else if (movYabs > movXabs && movYabs > movZabs) {
+        } else if (movYabs > 0 && movXabs == 0 && movZabs == 0) {
             if(mIsYMoveStarted==0) {
                 mIsYMoveStarted = movYsig > 0 ? 11 : 13;
                 mIsXMoveStarted = 0;
                 mIsZMoveStarted = 0;
                 cmd = mIsYMoveStarted;
             }
-        } else if (movZabs > movXabs && movZabs > movYabs) {
+        //} else if (movZabs > movXabs && movZabs > movYabs) {
+        } else if (movZabs > 0 && movXabs == 0 && movYabs == 0) {
             if(mIsZMoveStarted==0) {
                 mIsZMoveStarted = movZsig > 0 ? 16 : 15;
                 mIsYMoveStarted = 0;

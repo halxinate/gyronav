@@ -1,6 +1,8 @@
 package com.kukarin.app.gyronav;
 
 import android.os.Environment;
+import android.provider.Settings;
+import android.util.Log;
 
 import java.io.File;
 
@@ -35,12 +37,13 @@ public class Set {
 
     //Strings work
     public static final String DATETIMEFORMAT = "yyyy/MM/dd HH:mm:ss";
-    private static int mGyRotSpeed = 70 ;
+    private static int mGyRotSpeed = 65 ;
     private static int mGyDelayTime = 6;
-    private static int mAccMin = 96;
+    private static int mAccMin = 101;
     private static int mAccTime = 30;
     private static int mGyStep = 1;
     private static int mAccTop = 4; //(mine right side up)
+    private static int mOriginalTimeout = 0;
 
     public static void init(MapActivity app) {
         mApp = app;
@@ -48,6 +51,12 @@ public class Set {
         setTempFilePath();
         BASE64_PUBLIC_KEY = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhH/P63pYr9pISZ4WpSOzVPcVl4fJmtkVdkBcvZ8ucRJwydyliEHxxv97y3qf3R55+A6lW8SeVIdERyKKuSWUz0JrKWZYkSQBzHaZCN4Cqnjy8iLaRTgWBvMACn9gNgSybfYqLdYNVdsU+EKBNA5/dfC98+QS1PUaE5S8KwZ1wSWAAg32NqSYnDHIt1zZLClMmDGCh/sLYETgjmIztoUj5crZIAs+VsLNecSuk1CJzjFPVR5Kv2xcpRx3PVFfYv4ixD6FjwSVT5hjERg1tfxlsob9rK3fsW6VJTqUSb62Ch2qgXCefd1wCDN+BvfkURfUpE3U3kY8KrPXDj+Pk7yiNQIDAQAB";
         LICENSEGOOD = LICENSEBAD + LICOFFSET;
+
+        mOriginalTimeout = Settings.System.getInt(
+                Busy.getInstance().getContext().getContentResolver(),
+                Settings.System.SCREEN_OFF_TIMEOUT, 120000);
+        Log.d(TAG, "T="+mOriginalTimeout);
+
         ////String i = Installation.id(app.getApplicationContext()); //initialize for the first time
     }
 
@@ -139,5 +148,13 @@ public class Set {
     }
     public static void setmAccTop(int v) {
         Set.mAccTop = v;
+    }
+
+    public static void setOriginalTimeout(int originalTimeout) {
+        Set.mOriginalTimeout = originalTimeout;
+    }
+
+    public static int getOriginalTimeout() {
+        return mOriginalTimeout;
     }
 }
