@@ -34,9 +34,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.kukarin.app.gyronav.sensor.SensorsService;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class MapActivity extends FragmentActivity implements
@@ -80,7 +83,9 @@ public class MapActivity extends FragmentActivity implements
     private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 89;
     private Location mCurrentLocation;
     private String mLastUpdateTime;
-
+    private Track mTrack;
+    private Polyline mTrackLine;
+    private ArrayList<Marker> mMapMarkers; //marker objects on the map
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,7 +100,15 @@ public class MapActivity extends FragmentActivity implements
         Busy.getInstance().setContext(this);
         Set.init(this);
 
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+
+        //Continue initializations
         mGPS = new GPS(this);
+        mTrack = new Track();
+        mMapMarkers = new ArrayList<>();
 
         /*/Screen on/off control
         try {
@@ -106,11 +119,6 @@ public class MapActivity extends FragmentActivity implements
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = mPowerManager.newWakeLock(field, getLocalClassName());
         */
-
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
 
         //Menu
         menubutton = findViewById(R.id.bnMenu);
@@ -257,8 +265,8 @@ public class MapActivity extends FragmentActivity implements
     private void handleMessage(Intent msg) {
         Bundle data = msg.getExtras();
         switch (data.getInt(Set.EXID_GESTURE, 0)) {
-            //GYRO ----------------------------------------
-            case 1: //Up
+            //ROTATE ----------------------------------------
+            case 1: //Up (top down)
                 showGyroMenu(false);
                 switch (mGyroMode) {
                     case MODESCROLL: //Scroll
@@ -271,11 +279,11 @@ public class MapActivity extends FragmentActivity implements
                         switchMap(1);
                         break;
                     case MODEWAYPO: //waypoins
-                        addMarker();
+                        addLocationMarker();
                         break;
                 }
                 break;
-            case 2: //Rt //
+            case 2: //Rt
                 showGyroMenu(false);
                 switch (mGyroMode) {
                     case MODESCROLL: //Scroll
@@ -289,7 +297,7 @@ public class MapActivity extends FragmentActivity implements
                         break;
                 }
                 break;
-            case 3: //Dn
+            case 3: //Dn (top up)
                 showGyroMenu(false);
                 switch (mGyroMode) {
                     case MODESCROLL: //Scroll
@@ -302,6 +310,8 @@ public class MapActivity extends FragmentActivity implements
                         switchMap(-1);
                         break;
                     case MODEWAYPO: //waypoins
+                        addLocationMarker(); //no name asked
+                        askForWPname();
                         break;
                 }
                 break;
@@ -356,31 +366,6 @@ public class MapActivity extends FragmentActivity implements
             default:
                 return; //if 0 or other don't process
         }
-    }
-
-    private void addMarker() {
-        MarkerOptions options = new MarkerOptions();
-
-        // following four lines requires 'Google Maps Android API Utility Library'
-        // https://developers.google.com/maps/documentation/android/utility/
-        // I have used this to display the time as title for location markers
-        // you can safely comment the following four lines but for this info
-        /*
-        IconGenerator iconFactory = new IconGenerator(this);
-        iconFactory.setStyle(IconGenerator.STYLE_PURPLE);
-        options.icon(BitmapDescriptorFactory.fromBitmap(iconFactory.makeIcon(mLastUpdateTime)));
-        options.anchor(iconFactory.getAnchorU(), iconFactory.getAnchorV());
-        */
-        LatLng currentLatLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
-        options.position(currentLatLng);
-        Marker mapMarker = mMap.addMarker(options);
-        long atTime = mCurrentLocation.getTime();
-        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date(atTime));
-        mapMarker.setTitle(mLastUpdateTime);
-        Log.d(TAG, "Marker added.............................");
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLatLng));
-        Log.d(TAG, "Zoom done.............................");
-
     }
 
     /**
@@ -660,11 +645,26 @@ public class MapActivity extends FragmentActivity implements
     public void onLocationChanged(Location location) {
         Log.d(TAG, "Firing onLocationChanged..............................................");
         mCurrentLocation = location;
-        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
-        addLocationMarker();
+        Date t = new Date();
+        mLastUpdateTime = DateFormat.getTimeInstance().format(t);
+        mTrack.add(mCurrentLocation, t.getTime());
+        drawTrack();
+    }
+
+    private void drawTrack() {
+        // TODO: 3/15/2016 add processing when it's hidden
+        PolylineOptions opt = new PolylineOptions();
+        opt.addAll(mTrack.getCoords());
+        if(mTrackLine!=null) mTrackLine.remove();
+        mTrackLine = mMap.addPolyline(opt);
     }
 
     private void addLocationMarker() {
+        if(mCurrentLocation==null) {
+            My.msg(TAG, "No Location Fix yet. Is the GPS ON?");
+            return;
+        }
+
         MarkerOptions options = new MarkerOptions();
 
         // following four lines requires 'Google Maps Android API Utility Library'
@@ -677,15 +677,16 @@ public class MapActivity extends FragmentActivity implements
         options.icon(BitmapDescriptorFactory.fromBitmap(iconFactory.makeIcon(mLastUpdateTime)));
         options.anchor(iconFactory.getAnchorU(), iconFactory.getAnchorV());
         */
+
         LatLng currentLatLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
         options.position(currentLatLng);
         Marker mapMarker = mMap.addMarker(options);
-        long atTime = mCurrentLocation.getTime();
-        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date(atTime));
-        mapMarker.setTitle(mLastUpdateTime);
-        Log.d(TAG, "Marker added.............................");
+        mMapMarkers.add(mapMarker);
+
+        mTrack.addManualWaypoint(mCurrentLocation);
+        mapMarker.setTitle(mTrack.getLastManualWPinfo());
+
         mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLatLng));
-        Log.d(TAG, "Zoom done.............................");
     }
 
     /**
@@ -700,6 +701,16 @@ public class MapActivity extends FragmentActivity implements
             GooglePlayServicesUtil.getErrorDialog(status, this, 0).show();
             return false;
         }
+    }
+
+    /**
+     * Ask user for the waypoint name
+     */
+    private void askForWPname() {
+        // TODO: 3/15/2016 start new activity or frag woth gyro kbd and save the name
+
+        //mock
+        My.msg(TAG, "Enter the Waypoint name placeholder");
     }
 
     /**
@@ -731,6 +742,7 @@ public class MapActivity extends FragmentActivity implements
             // permissions this app might request
         }
     }
+
 
     //MENU =========================================================================================
 
