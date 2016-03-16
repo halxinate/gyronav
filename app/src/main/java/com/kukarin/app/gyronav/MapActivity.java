@@ -48,6 +48,7 @@ public class MapActivity extends FragmentActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         GoogleApiClient.ConnectionCallbacks {
     private static final String TAG = "MapActivity";
+    private static final int RESULT_GETWPNAME = 1;
 
     private android.support.v7.widget.PopupMenu popupMenu;
     private View menubutton;
@@ -581,6 +582,13 @@ public class MapActivity extends FragmentActivity implements
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
+            case RESULT_GETWPNAME:
+                if (resultCode == RESULT_OK) {
+                    mTrack.setLastWaypointName(data.getStringExtra("WPNAME"));
+                    int sz = mMapMarkers.size();
+                    mMapMarkers.get(sz-1).setTitle(mTrack.getLastManualWPinfo());
+                }
+                break;
             case Set.RESRET_FILE_SELECTOR: //New file is selected
                 if (resultCode == RESULT_OK) {
 
@@ -707,10 +715,8 @@ public class MapActivity extends FragmentActivity implements
      * Ask user for the waypoint name
      */
     private void askForWPname() {
-        // TODO: 3/15/2016 start new activity or frag woth gyro kbd and save the name
-
-        //mock
-        My.msg(TAG, "Enter the Waypoint name placeholder");
+        Intent i=new Intent(this, WaypointName.class);
+        startActivityForResult(i, RESULT_GETWPNAME);        
     }
 
     /**

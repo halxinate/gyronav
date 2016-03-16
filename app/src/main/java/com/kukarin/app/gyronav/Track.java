@@ -90,6 +90,12 @@ public class Track {
         return out;
     }
 
+    public void setLastWaypointName(String wpname) {
+        int size = manualwp.size();
+        if(size==0) return;
+        manualwp.get(size-1).setName(wpname);
+    }
+
     private class Waypoint {
         private String name;
         private double mAltitude=0;

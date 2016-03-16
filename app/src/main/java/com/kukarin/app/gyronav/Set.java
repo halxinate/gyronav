@@ -24,6 +24,8 @@ public class Set {
     private static String BASE64_PUBLIC_KEY;
 
     //RETURN RESULTS
+    public static final int RESRET_CANCEL = 88;
+    public static final int RESRET_WPNAME = 88;
     public static final int RESRET_FILE_SELECTOR = 2;
     public static final int RESRET_EXTRAPOL = 3;
 
