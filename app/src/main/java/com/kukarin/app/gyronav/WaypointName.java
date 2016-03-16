@@ -35,13 +35,17 @@ public class WaypointName extends AppCompatActivity {
                 finishActivity(Set.RESRET_CANCEL);
                 break;
             default:
-                String c = (String) ((Button) v).getText();
+                String c = ((Button) v).getText().toString();
                 int i0 = mEdit.getSelectionStart();
                 int i1 = mEdit.getSelectionEnd();
                 String s = mText.substring(0,i0)+c+mText.substring(i1);
                 mText = s;
                 mEdit.setText(mText);
-                mEdit.setSelection(i0+1, i0+2);
+                //move marker
+                i0++;
+                int sz = mText.length();
+                if(i0>sz-1) mEdit.setSelection(sz-1);
+                else mEdit.setSelection(i0+1, i0+2);
                 break;
         }
     }
