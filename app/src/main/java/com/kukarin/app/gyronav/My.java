@@ -110,4 +110,16 @@ public class My {
         ((Vibrator) Busy.getInstance().getContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(m==1?70:300);
     }
 
+    /**
+     * Safely loop a provided index through the loopmenu allowed values in a loop
+     * @param cur
+     * @param i
+     * @return
+     */
+    public static int loopValue(int cur, int i, int sz) {
+        cur += i;
+        if (cur < 0) cur += sz;
+        else if (cur >= sz) cur -= sz;
+        return cur;
+    }
 }

@@ -36,6 +36,7 @@ public class Set {
     public static final String EXID_TARGETSTART = "targetstart";
     public static final String EXID_TARGETFLAGS = "targetflags";
     public static final String EXID_GESTURE     = "alxgesturenum";
+    public static final String EXID_WPNAME      = "WPNAME";
 
     //Strings work
     public static final String DATETIMEFORMAT = "yyyy/MM/dd HH:mm:ss";

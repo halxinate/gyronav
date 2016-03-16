@@ -412,7 +412,7 @@ public class MapActivity extends FragmentActivity implements
      */
     private void switchMap(int i) {
         My.vib(1);
-        mMapTypeSwitch = loopValue(mMapTypeSwitch, i, mapTypes.length);
+        mMapTypeSwitch = My.loopValue(mMapTypeSwitch, i, mapTypes.length);
         mMap.setMapType(mapTypes[mMapTypeSwitch]);
     }
 
@@ -434,9 +434,9 @@ public class MapActivity extends FragmentActivity implements
         //second rotate - move the menu
         if (loopHider != null) loopHider.prolong();
         int sz = gyroModes.length;
-        int i1 = loopValue(mGyroMode - 1, i, sz);
-        int i2 = loopValue(mGyroMode, i, sz);
-        int i3 = loopValue(mGyroMode + 1, i, sz);
+        int i1 = My.loopValue(mGyroMode - 1, i, sz);
+        int i2 = My.loopValue(mGyroMode, i, sz);
+        int i3 = My.loopValue(mGyroMode + 1, i, sz);
 
         ((TextView) findViewById(R.id.tv_loop1)).setText(gyroModes[i1]);
         ((TextView) findViewById(R.id.tv_loop2)).setText(gyroModes[i2]);
@@ -463,19 +463,6 @@ public class MapActivity extends FragmentActivity implements
         }
         ((TextView) findViewById(R.id.tv_mode)).setText(gyroModes[mGyroMode]);
 
-    }
-
-    /**
-     * Safely loop a provided index through the loopmenu allowed values in a loop
-     * @param cur
-     * @param i
-     * @return
-     */
-    private int loopValue(int cur, int i, int sz) {
-        cur += i;
-        if (cur < 0) cur += sz;
-        else if (cur >= sz) cur -= sz;
-        return cur;
     }
 
     private void zoomMap(int i) {
@@ -584,9 +571,13 @@ public class MapActivity extends FragmentActivity implements
         switch (requestCode) {
             case RESULT_GETWPNAME:
                 if (resultCode == RESULT_OK) {
-                    mTrack.setLastWaypointName(data.getStringExtra("WPNAME"));
+                    String name = data.getStringExtra(Set.EXID_WPNAME);
+                    mTrack.setLastWaypointName(name);
                     int sz = mMapMarkers.size();
-                    mMapMarkers.get(sz-1).setTitle(mTrack.getLastManualWPinfo());
+                    if(sz!=0)
+                        mMapMarkers.get(sz-1).setTitle(mTrack.getLastManualWPinfo());
+                    else
+                        My.msg(TAG, "WP name would be "+name);
                 }
                 break;
             case Set.RESRET_FILE_SELECTOR: //New file is selected
