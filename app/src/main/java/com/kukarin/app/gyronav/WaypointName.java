@@ -5,61 +5,117 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-public class WaypointName extends AppCompatActivity {
-    EditText mEdit;
-    String mText="";
+// TODO: 3/16/2016  caps input, last letter not going to the right, initial letter not set, on letter index change kbd not updating
+public class WaypointName extends AppCompatActivity implements View.OnClickListener {
+    private final String TAG = "WaypointName";
+    private final int ID0 = 9000;
+    EditGyro mEdit;
+    String mText = "";
     private int mX;
     private int mY;
+    private int mI;
+    private final String[] mBnText = {"1", "2", "3", "4", "5", "6", "a", "b", "c", "d", "e", "7", "f", "g", "h", "i", "j", "8", "k", "l", "m", "n", "o", "9", "p", "q", "r", "s", "t", "0", "u", "v", "w", "x", "y", "z", "_", "?", "!", "-", "\"", "OK"};
+    private View mPushedButton = null;
+    private int mRows = 7;
+    private int mCols = 6;
+    private LinearLayout mKBlayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_waypoint_name);
-        mEdit = (EditText)findViewById(R.id.kbedit);
-        mX=0;
-        mY=0;
+
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        ViewGroup vg = (ViewGroup) inflater.inflate(R.layout.activity_waypoint_name, null);
+        setContentView(vg);
+
+        //Keyboar layout building
+        //Button
+        LinearLayout.LayoutParams parbn = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT);
+        parbn.weight = 1;
+        //Line
+        LinearLayout.LayoutParams parln = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        parln.weight = 1;
+
+        mKBlayout = (LinearLayout) vg.findViewById(R.id.kbrootlayout);
+        for (int j = 0; j < mRows; j++) { //rows
+            LinearLayout line = new LinearLayout(this);
+            line.setOrientation(LinearLayout.HORIZONTAL);
+            line.setLayoutParams(parln);
+            for (int i = 0; i < mCols; i++) { //columns
+                Button b = new Button(this);
+                int index = i + j * mCols;
+                b.setText(mBnText[index]);
+                b.setId(index + ID0);
+                b.setTag(mBnText[index]);
+                b.setLayoutParams(parbn);
+                if (j == 0 || (i == mCols - 1 && j <= mRows - 2)) //highlight numbers
+                    b.setTextColor(getResources().getColor(R.color.kb_bn_text2));
+                else if (i == mCols - 1 && j == mRows - 1) //OK button
+                    b.setTextColor(getResources().getColor(R.color.kb_bn_text3));
+                b.setBackgroundResource(R.drawable.bnbackoff);
+                b.setOnClickListener(this);
+                line.addView(b);
+            }
+            mKBlayout.addView(line);
+        }
+
+        mText = getIntent().getStringExtra(Set.EXID_WPNAME);
+        mEdit = (EditGyro) findViewById(R.id.kbedit);
+        mEdit.setText(mText);
+        mI = 0; //selection start
+        mEdit.setSelection(mI);
+        int index = pushPutton(mText.charAt(mI));
+        mX = index % mRows;
+        mY = index / mRows;
+
     }
 
-    public void onKbdClick(View v) {
-        int vid = v.getId();
-        switch (vid) {
-            case R.id.kbok1:
-            case R.id.kbok2:
-
-                Intent i = new Intent();
-                i.putExtra(Set.EXID_WPNAME, mText);
-                setResult(Activity.RESULT_OK, i);
-                finish();
-
-                break;
-            case R.id.kbcancel1:
-            case R.id.kbcancel2:
-                finish();
-                break;
-            default: //manual input from kbd
-                String c = ((Button) v).getText().toString();
-                int i0 = mEdit.getSelectionStart();
-                int i1 = mEdit.getSelectionEnd();
-                String s = mText.substring(0,i0)+c+mText.substring(i1);
-                mText = s;
-                mEdit.setText(mText);
-                //move marker
-                mEdit.setSelection(++i0);
-                break;
+    /**
+     * Selects new button by its tag text, deselects prev button
+     * @param s
+     * @return
+     */
+    private int pushPutton(char s) {
+        if(mPushedButton!=null)
+            mPushedButton.setBackgroundResource(R.drawable.bnbackoff);
+        int index = 0;
+        for(String c : mBnText){
+            if(c.charAt(0)==s) {
+                mPushedButton = mKBlayout.findViewById(index + ID0);
+                mPushedButton.setBackgroundResource(R.drawable.bnbackon);
+                return index;
+            }
+            ++index;
         }
+        return -1; //not found
+    }
+
+    /**
+     * Selects button by its index
+     * @param index
+     */
+    private char pushButton(int index) {
+        if(mPushedButton!=null)
+                mPushedButton.setBackgroundResource(R.drawable.bnbackoff);
+        mPushedButton = mKBlayout.findViewById(index + ID0);
+        mPushedButton.setBackgroundResource(R.drawable.bnbackon);
+        return mPushedButton.getTag().toString().charAt(0);
+    }
+
+    private void returnResult() {
+        Intent i = new Intent();
+        i.putExtra(Set.EXID_WPNAME, mText);
+        setResult(Activity.RESULT_OK, i);
+        finish();
     }
 
     @Override
@@ -95,16 +151,16 @@ public class WaypointName extends AppCompatActivity {
         switch (data.getInt(Set.EXID_GESTURE, 0)) {
             //ROTATE ----------------------------------------
             case 1: //Up (top down)
-                selectLetter(0,-1);
+                selectLetter(0, -1);
                 break;
             case 2: //Rt
-                selectLetter(1,0);
+                selectLetter(-1, 0);
                 break;
             case 3: //Dn (top up)
-                selectLetter(0,1);
+                selectLetter(0, 1);
                 break;
             case 4: //Lt
-                selectLetter(-1,0);
+                selectLetter(1, 0);
                 break;
             case 5: //rotate CW
                 moveCursor(1);
@@ -135,33 +191,35 @@ public class WaypointName extends AppCompatActivity {
     }
 
     private void moveCursor(int dx) {
-        // TODO: 3/15/2016 shift and highlight, adding currently selected on kbd letter
+        if(mPushedButton.getTag()==mBnText[mBnText.length-1])
+            returnResult();
+        else {
+            mI += dx;
+            mEdit.setSelection(mI);
+        }
     }
 
-    //                        .....!.....!.....!.....!.....!.....!.....!
-    private final String kbd="123456abcde7fghij8klmno9pqrst0uvwxyz!+-*?_";
-
+    /**
+     * On move gestures
+     * @param dx
+     * @param dy
+     */
     private void selectLetter(int dx, int dy) { //zero top left
-        int xsz;
-        if((mY==0 && dy==1) || (mY==7 && dy==-1)) { //jump from OK to letters
-            if(mX==1) mX = 6; //jump to right side if it was on Cancel
-        }
-        mY = My.loopValue(mY, dy, 8);
-        if(mY==0 || mY==7) {
-            xsz = 2;
-            if(mX>1) mX=0; //jump from letters row, reset X to OK
-        }
-        else {
-            xsz = 6;
-        }
-        mX = My.loopValue(mX, dx, xsz);
-        if(xsz==2) {//controls
+        mY = My.loopValue(mY, dy, mRows);
+        mX = My.loopValue(mX, dx, mCols);
+        int index = mX+mY*mCols;
+        char c = pushButton(index);
+        mEdit.replaceAt(mI, c);
+    }
 
+    @Override
+    public void onClick(View v) {
+        if (v.getTag() == mBnText[mBnText.length - 1]) { //OK
+            returnResult();
+        } else {
+            mI = mEdit.getSelectionStart(); //in case it was manually changed
+            mEdit.replaceAt(mI++, v.getTag().toString().charAt(0));
+            mPushedButton = null;
         }
-        String c = "" + kbd.charAt(mX+mY*6);
-        c = c.toUpperCase();
-
-        // TODO: 3/15/2016 Highlight the button.
-        // But it will be beneficial to add them programmatically
     }
 }

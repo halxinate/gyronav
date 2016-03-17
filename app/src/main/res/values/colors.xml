@@ -4,4 +4,6 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="bnText">#afafaf</color>
+    <color name="kb_bn_text2">#007272</color>
+    <color name="kb_bn_text3">#AF0000</color>
 </resources>

@@ -374,6 +374,7 @@ public class MapActivity extends FragmentActivity implements
      * @param turnoff
      */
     private void screenOff(boolean turnoff) {
+        /*
         if(turnoff && mGyroModeCounter>0) {
             mGyroDelayedOff = true;
             return; //Dont sleep if gyro menu on
@@ -384,6 +385,7 @@ public class MapActivity extends FragmentActivity implements
             scrOffwaiter.execute("");
         } //stop screen off timer
         else if (scrOffwaiter != null) scrOffwaiter.cancel(true);
+        */
     }
 
     private void showCenterMessage(boolean show) {
@@ -707,6 +709,7 @@ public class MapActivity extends FragmentActivity implements
      */
     private void askForWPname() {
         Intent i=new Intent(this, WaypointName.class);
+        i.putExtra(Set.EXID_WPNAME, mTrack.getLastManualWPname());
         startActivityForResult(i, RESULT_GETWPNAME);        
     }
 

@@ -96,6 +96,12 @@ public class Track {
         manualwp.get(size-1).setName(wpname);
     }
 
+    public String getLastManualWPname() {
+        int size = manualwp.size();
+        if(size==0) return "NONAME";
+        return manualwp.get(size-1).getName();
+    }
+
     private class Waypoint {
         private String name;
         private double mAltitude=0;
