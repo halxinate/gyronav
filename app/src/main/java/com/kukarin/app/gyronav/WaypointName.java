@@ -5,12 +5,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
@@ -19,15 +20,16 @@ public class WaypointName extends AppCompatActivity implements View.OnClickListe
     private final String TAG = "WaypointName";
     private final int ID0 = 9000;
     EditGyro mEdit;
-    String mText = "";
-    private int mX;
-    private int mY;
-    private int mI;
-    private final String[] mBnText = {"1", "2", "3", "4", "5", "6", "a", "b", "c", "d", "e", "7", "f", "g", "h", "i", "j", "8", "k", "l", "m", "n", "o", "9", "p", "q", "r", "s", "t", "0", "u", "v", "w", "x", "y", "z", "_", "?", "!", "-", "\"", "OK"};
+    private String SPACE = "_";
+    private final String[] mBnText = {"1", "2", "3", "4", "5", "6", "A", "B", "C", "D", "E", "7", "F", "G", "H", "I", "J", "8", "K", "L", "M", "N", "O", "9", "P", "Q", "R", "S", "T", "0", "U", "V", "W", "X", "Y", "Z", "_", "?", "!", "-", "\"", "OK"};
+    private int OK_BUTTON = mBnText.length-1;
+    //private int DEL_BUTTON = mBnText.length-2;
     private View mPushedButton = null;
     private int mRows = 7;
     private int mCols = 6;
     private LinearLayout mKBlayout;
+    private int mBnIndex;
+    private int mCursor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,15 +70,17 @@ public class WaypointName extends AppCompatActivity implements View.OnClickListe
             mKBlayout.addView(line);
         }
 
-        mText = getIntent().getStringExtra(Set.EXID_WPNAME);
+        String text = getIntent().getStringExtra(Set.EXID_WPNAME).trim().toUpperCase();
+        text = text.replaceAll(" ", SPACE);
         mEdit = (EditGyro) findViewById(R.id.kbedit);
-        mEdit.setText(mText);
-        mI = 0; //selection start
-        mEdit.setSelection(mI);
-        int index = pushPutton(mText.charAt(mI));
-        mX = index % mRows;
-        mY = index / mRows;
-
+        mEdit.setText(text);
+        mCursor = 0; //selection start
+        mEdit.setSelection(mCursor);
+        mBnIndex = pushPutton(text.charAt(mCursor)); //highlight first letter
+        if(mBnIndex<0) { //not found select OK
+            mBnIndex = OK_BUTTON;
+            pushButton(mBnIndex);
+        }
     }
 
     /**
@@ -88,10 +92,14 @@ public class WaypointName extends AppCompatActivity implements View.OnClickListe
         if(mPushedButton!=null)
             mPushedButton.setBackgroundResource(R.drawable.bnbackoff);
         int index = 0;
+        View b;
         for(String c : mBnText){
-            if(c.charAt(0)==s) {
-                mPushedButton = mKBlayout.findViewById(index + ID0);
-                mPushedButton.setBackgroundResource(R.drawable.bnbackon);
+            if(c.charAt(0)==s) { //TAG found among kb buttons
+                b = mKBlayout.findViewById(index + ID0);
+                if(b!=null) mPushedButton = b; //in case not found the old button will be re-pushed
+                if(mPushedButton!=null) //the old one could be null
+                    mPushedButton.setBackgroundResource(R.drawable.bnbackon);
+                mBnIndex = index;
                 return index;
             }
             ++index;
@@ -108,14 +116,8 @@ public class WaypointName extends AppCompatActivity implements View.OnClickListe
                 mPushedButton.setBackgroundResource(R.drawable.bnbackoff);
         mPushedButton = mKBlayout.findViewById(index + ID0);
         mPushedButton.setBackgroundResource(R.drawable.bnbackon);
+        mBnIndex = index;
         return mPushedButton.getTag().toString().charAt(0);
-    }
-
-    private void returnResult() {
-        Intent i = new Intent();
-        i.putExtra(Set.EXID_WPNAME, mText);
-        setResult(Activity.RESULT_OK, i);
-        finish();
     }
 
     @Override
@@ -151,22 +153,22 @@ public class WaypointName extends AppCompatActivity implements View.OnClickListe
         switch (data.getInt(Set.EXID_GESTURE, 0)) {
             //ROTATE ----------------------------------------
             case 1: //Up (top down)
-                selectLetter(0, -1);
+                onSelectButton(0, -1);
                 break;
             case 2: //Rt
-                selectLetter(-1, 0);
+                onSelectButton(-1, 0);
                 break;
             case 3: //Dn (top up)
-                selectLetter(0, 1);
+                onSelectButton(0, 1);
                 break;
             case 4: //Lt
-                selectLetter(1, 0);
+                onSelectButton(1, 0);
                 break;
             case 5: //rotate CW
-                moveCursor(1);
+                onMoveCursor(1);
                 break;
             case 6: //rotate CCW
-                moveCursor(-1);
+                onMoveCursor(-1);
                 break;
             case 10: // proximity ----------------------------
                 break;
@@ -190,36 +192,77 @@ public class WaypointName extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void moveCursor(int dx) {
-        if(mPushedButton.getTag()==mBnText[mBnText.length-1])
+    /**
+     * Move text cursor in the edit field (rotate Z gesture response)
+     * @param dx
+     */
+    private void onMoveCursor(int dx) {
+        My.vib(1);
+        if(mPushedButton.getTag()==mBnText[OK_BUTTON])
             returnResult();
         else {
-            mI += dx;
-            mEdit.setSelection(mI);
+            String text = mEdit.getText().toString();
+            mCursor += dx;
+            if(mCursor<0) { //leftmost hit - extend it left
+                mCursor = 0;
+                text = SPACE+text;
+            }
+            else if(mCursor==text.length())
+                text += SPACE; //extend it right
+
+            //truncate hanging underscores on the right if moving cursor left
+            int sz = text.length();
+            if(mCursor==sz-2 && text.charAt(sz-1)==SPACE.charAt(0)){
+                text = text.substring(0,sz-1);
+            }
+            else if(mCursor==1 && text.charAt(0)==SPACE.charAt(0)){
+                text = text.substring(1);
+                mCursor = 0;
+            }
+            mEdit.setText(text);
+            mEdit.setSelection(mCursor);
+            pushPutton(text.charAt(mCursor));
         }
     }
 
     /**
-     * On move gestures
+     * Gesture for changing the letter
      * @param dx
      * @param dy
      */
-    private void selectLetter(int dx, int dy) { //zero top left
+    private void onSelectButton(int dx, int dy) { //zero top left
+        My.vib(1);
+        int mX = mBnIndex % mCols;
+        int mY = mBnIndex / mCols;
+
         mY = My.loopValue(mY, dy, mRows);
         mX = My.loopValue(mX, dx, mCols);
         int index = mX+mY*mCols;
         char c = pushButton(index);
-        mEdit.replaceAt(mI, c);
+        if(index != OK_BUTTON)
+            mEdit.replaceAt(mCursor, c);
     }
 
+    /**
+     * Manully pushed button
+     * @param v
+     */
     @Override
     public void onClick(View v) {
         if (v.getTag() == mBnText[mBnText.length - 1]) { //OK
             returnResult();
         } else {
-            mI = mEdit.getSelectionStart(); //in case it was manually changed
-            mEdit.replaceAt(mI++, v.getTag().toString().charAt(0));
-            mPushedButton = null;
+            mBnIndex = v.getId()-ID0;
+            onSelectButton(0,0);
+            onMoveCursor(1); //auto advance cursor on manual input
         }
+    }
+
+    private void returnResult() {
+        Intent i = new Intent();
+        String name = mEdit.getText().toString().replaceAll("_", " ");
+        i.putExtra(Set.EXID_WPNAME, name.trim());
+        setResult(Activity.RESULT_OK, i);
+        finish();
     }
 }

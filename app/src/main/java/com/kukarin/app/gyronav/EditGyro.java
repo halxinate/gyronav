@@ -15,19 +15,39 @@ public class EditGyro extends EditText {
 
     @Override
     protected void onSelectionChanged(int selStart, int selEnd) {
-        char[] spc = {' '};
         if(selStart==this.length()){ //at the end - insert space first
-            this.setText(spc, length(),1);
+            setText(getText().toString() + "_"); //extend the value to the right
         }
-        this.setSelection(selStart, selStart + 1);
+        setSelection(selStart, selStart + 1);
     }
 
     public void replaceAt(int i, char c) {
         String oriContent = getText().toString();
         int index = getSelectionStart() >= 0 ? getSelectionStart() : 0;
         StringBuilder sBuilder = new StringBuilder(oriContent);
-        sBuilder.replace(index, index+1, ""+c);
+        sBuilder.replace(index, index+1, "" + c);
         setText(sBuilder.toString());
         setSelection(index);
+    }
+
+    /**
+     * Prevents softkeyboard or manual cursor selection, but retains selection display!
+     * @return
+     */
+    @Override
+    public boolean onCheckIsTextEditor() {
+        return false;
+    }
+
+    /**
+     * Delete char, but not set sursor. XCursor must be set on outside
+     * @param i
+     */
+    public void deleteAt(int i) {
+        if(i<0||i>this.length()-1) return;
+        String oriContent = getText().toString();
+        StringBuilder sBuilder = new StringBuilder(oriContent);
+        sBuilder.deleteCharAt(i);
+        setText(sBuilder.toString());
     }
 }

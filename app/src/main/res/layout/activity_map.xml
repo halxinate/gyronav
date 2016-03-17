@@ -41,8 +41,8 @@
         <Button
             android:layout_width="@dimen/buttonsize"
             android:layout_height="@dimen/buttonsize"
-            android:text="-"
-            android:id="@+id/bnMinus"
+            android:text="+"
+            android:id="@+id/bnPlus"
             android:background="@mipmap/ic_disk"
             android:textSize="@dimen/buttonfontsize"
             android:alpha="0.7"
@@ -82,8 +82,8 @@
         <Button
             android:layout_width="@dimen/buttonsize"
             android:layout_height="@dimen/buttonsize"
-            android:text="+"
-            android:id="@+id/bnPlus"
+            android:text="+-"
+            android:id="@+id/bnMinus"
             android:background="@mipmap/ic_disk"
             android:textSize="@dimen/buttonfontsize"
             android:alpha="0.7"

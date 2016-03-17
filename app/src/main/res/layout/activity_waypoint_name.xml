@@ -7,14 +7,24 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.kukarin.app.gyronav.WaypointName"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:gravity="fill_vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Set Waypoint Name"
+        android:id="@+id/tv_wpnamehead" />
 
     <com.kukarin.app.gyronav.EditGyro
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/kbedit"
-        android:layout_gravity="center_horizontal" />
+        android:layout_gravity="center_horizontal"
+        android:paddingTop="@dimen/padding_small"
+        android:paddingBottom="@dimen/padding_small"
+        android:textAlignment="center" />
 
     <LinearLayout
         android:orientation="vertical"
@@ -24,5 +34,11 @@
         android:id="@+id/kbrootlayout">
 
     </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Rotate to move the cursor within the name text, tilt to select a letter button. The underscope '_' will be converted to space, excessive spaces truncated later. Select OK button to apply the name."
+        android:id="@+id/textView" />
 
 </LinearLayout>
