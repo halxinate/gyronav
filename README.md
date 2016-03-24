@@ -9,8 +9,8 @@ of one hand, while holding the phone in the second hand to control the software.
 protective gloves, doing that in wet environment, or simply cannot use both hands for safety reasons. I'm offering an 
 almost ready to implement Android solution which allows to control any software with 4 virtual arrow keys and 2 virtual 
 buttons, using one hand only and without any need to touch anything on the phone, as well as making the app aware of the 
-phone orientation in 3d space for additional, power saving / improved handling functions. The quick proof of concept 
-dirty code, utilizing the phone's gyroscope and accelerometer for that, is provided.
+phone orientation in 3d space for additional (i.e. power saving / improved handling) functions. The quick proof of concept 
+dirty code, utilizing the phone's gyroscope and accelerometer sensors for that, is provided.
 
 # Use case implemented
 
@@ -37,14 +37,13 @@ The Underscore has a special functionality: it's converted to spaces and the exc
 with space, which allows to jump to the OK button from it on the keyboard. Also it can be used to delete parts of the name 
 at its beginning or end (leading/trailing spaces are removed).
 
-In order to aid user with the UI functionality available, the minimized rotary menu selection label is displayed at the top 
-of the screen, in the bottom right corner of the screen a round allowed rocking directions icon is displayed as well (by 
-initial design, it should accompany the menu selection at the top, making a single UI element). Also there are two types of 
+In order to aid user with the Gyro UI functionality available, the minimized rotary menu selection label is displayed at the top 
+of the screen, in the bottom right corner of the screen a round icon reminding about allowed rocking directions is displayed as well (just by initial design, it should accompany the menu selection at the top, making a single UI element). Also there are two types of 
 vibration feedback used to confirm UI changes, as visual feedback may not be reliably enough with the device moving in the 
 hand.
 
 With some practice the gestures are intuitive enough and natural to perform as soon as you have the limits and timeouts tuned
-to your hands' dexterity once.
+to your hands' dexterity with your particular phone/tablet once.
 
 # Overview of the code
 
