@@ -18,7 +18,7 @@ The user wears the smartphone on the neck lanyard in a tough protective case and
 to check his location, track, or add a way point. The phone screen turns on automatically on pick up, an goes off after 
 a brief pause on returning back to hanging position.
 
-User can scroll the map by 1/4 of the screen by tilting the side of the phone towards your eyes or outwards. E.g. flipping its top
+User can scroll the map by 1/4 of the screen by tilting the side of the phone towards his eyes or outwards. E.g. flipping its top
 sharply forward will scroll the map up. I call it X-Y rocking as the gesture implies noticeable change of the screen's 
 angle to your eyes, however the key is the speed of that gesture, not the angle.
 
