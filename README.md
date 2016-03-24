@@ -18,7 +18,7 @@ The user wears the smartphone on the neck lanyard in a tough protective case and
 to check his location, track, or add a way point. The phone screen turns on automatically on pick up, an goes off after 
 a brief pause on returning back to hanging position.
 
-User can scroll the map by 1/4 of the screen by tilting the side of the phone towards or outwards. E.g. flipping its top
+User can scroll the map by 1/4 of the screen by tilting the side of the phone towards your eyes or outwards. E.g. flipping its top
 sharply forward will scroll the map up. I call it X-Y rocking as the gesture implies noticeable change of the screen's 
 angle to your eyes, however the key is the speed of that gesture, not the angle.
 
@@ -29,8 +29,8 @@ other Gyro Gesture. Now, X-Y rocking the phone forward will zoom out the map for
 zoom it in. Rocking it left or right could be used for fine zooming, but that's not implemented.
 
 Exactly the same sequence of gestures used to change the map type and to add way points. For way points there are 2 modes
-implemented: rock forward registers it automatically, assigning just a number, rocking up will bring another Gyro UI control
-- Gyro Keyboard allowing to set the name for the waypoint. The UX is replicating the Garmin eTrex handheld GPS navigator 
+implemented: rock forward registers it automatically, assigning just a number, rocking up will bring another Gyro UI 
+control - Gyro Keyboard allowing to set the name for the waypoint. The UX is replicating the Garmin eTrex handheld GPS navigator 
 way points naming screen with some improvements. Use the X-Y rocking to select a letter or a command button from it, rotate
 to change the focus of the input or to save the name (while over the OK button). The keyboard is looped over its sides. 
 The Underscore has a special functionality: it's converted to spaces and the excess spaces are trimmed, so the text must end 
