@@ -18,9 +18,7 @@ The user wears the smartphone on the neck lanyard in a tough protective case and
 to check his location, track, or add a way point. The phone screen turns on automatically on pick up, an goes off after 
 a brief pause on returning back to hanging position.
 
-User can scroll the map by 1/4 of the screen by tilting the side of the phone towards his eyes or outwards. E.g. flipping its top
-sharply forward will scroll the map up. I call it X-Y rocking as the gesture implies noticeable change of the screen's 
-angle to your eyes, however the key is the speed of that gesture, not the angle.
+User can scroll the map by 1/4 of the screen by tilting the corresponding side of the phone towards his/her eyes or outwards. E.g. flipping its top sharply away will scroll the map up (you can think of the map as of a fluid). I call it X-Y rocking as the gesture implies noticeable change of the screen's angle to your eyes, however the key is the speed of that gesture, not the angle.
 
 If the map's zoom needed, the new Gyro UI mode can be selected from the rotary menu by rotating the phone screen (shaking
 the top of the phone left or right) in the hand sharply left or right one time to bring it on, and repeating that gesture
