@@ -20,20 +20,23 @@ a brief pause on returning back to hanging position.
 
 User can scroll the map by 1/4 of the screen by tilting the corresponding side of the phone towards his/her eyes or outwards. E.g. flipping its top sharply away will scroll the map up (you can think of the map as of a fluid). I call it X-Y rocking as the gesture implies noticeable change of the screen's angle to your eyes, however the key is the speed of that gesture, not the angle.
 
-If the map's zoom needed, the new Gyro UI mode can be selected from the rotary menu by rotating the phone screen (shaking
-the top of the phone sideways) in the hand sharply left or right: one time to bring menu to the screen at the top, and repeating
-that gesture to "slide" the necessary mode label (i.e. "Zoom") to the center of the menu. Menu disappears after a time-out or on any 
-other Gyro Gesture. Now, X-Y rocking the phone forward will zoom out the map for one level, rocking it towards your eyes -
-zoom it in. Rocking it left or right could be used for fine zooming, but that's not implemented.
+If the map's zoom needed, the corresponding Gyro UI function mode can be selected from the rotary menu by rotating the phone
+screen (shaking the top of the phone sideways) in the hand sharply left or right: one time to bring menu to the screen at the top,
+and repeating that gesture as many times as needed to "slide" the required mode label (i.e. "Zoom") into the center (top) of the
+menu. The rotary menu disappears after a time-out or on any other Gyro UI Gesture. Now, X-Y rocking the phone forward will zoom out
+the map for one level, rocking it towards your eyes - zoom it in. Rocking it left or right could be used for fine zooming, 
+but that's not implemented.
 
-Exactly the same sequence of gestures used to change the map's type and to add way points. For way points there are 2 modes
-implemented: rocking down registers it automatically, assigning it a sequential number, while rocking up will bring another Gyro UI
-control - the Gyro Keyboard allowing to set the name for the waypoint. The UX is replicating the Garmin eTrex handheld GPS navigator
-way points naming screen with some improvements. Use the X-Y rocking to move the key selector to desired letter or a command button
-from it, and rotate phone left or right to change the focus of the input within the word, or to save the result while the keyboard selector is over the OK button (bottom right). The keyboard is looped over its sides. The Underscore button (bottom left) has 
-a special functionality: it's letter is converted to space on finish and the excess spaces are trimmed, so the input name must end
-with the Underscore, to allow moving the keyboard selector to the OK button from it on the keyboard in one step. Also the
-Underscore button can be used to delete parts of the name at its beginning or end as leading/trailing spaces will be removed.
+Exactly the same sequence of gestures used to change the map's type and to add way points. Rotate the phone to select the Map Mode
+or Wy Point item. For way points there are 2 modes implemented: rocking down registers it automatically, assigning it a sequential
+number, while rocking up will bring another Gyro UI control - the Gyro Keyboard allowing to set the name for the waypoint. The UX 
+is replicating the Garmin eTrex handheld GPS navigator way points naming screen with some improvements. Use the X-Y rocking to move
+the key selector to desired letter or a command button from it, and rotate phone left or right to change the focus of the input 
+within the word, or to save the result while the keyboard selector is over the OK button (bottom right). The keyboard is looped 
+over its sides. The Underscore button (bottom left) has a special functionality: it's letter is converted to space on finish and 
+the excess spaces are trimmed, so the input name must end with the Underscore, to allow moving the keyboard selector to the OK 
+button from it on the keyboard in one step. Also the Underscore button can be used to delete parts of the name at its beginning or
+end as leading/trailing spaces will be removed.
 
 In order to aid user with the Gyro UI functionality available - the current selection in the rotary menu is displayed at the top 
 of the screen as a minimized label. In the bottom right corner of the screen a round icon, reminding about allowed rocking 
