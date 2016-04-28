@@ -5,7 +5,7 @@ Android gyroscopic control for a map navigation app (Dedicated to OSMAnd project
 
 All smartphone GPS navigation apps have an obvious for any avid tourist flaw, limiting the use of such apps for 
 serious outdoors adventures. The problem is that it requires precise touching of the fragile screen with bare fingers
-of one hand, while holding the phone in the second hand to control the software. That is hard to do if you wear warm or 
+of one hand, while holding the phone in the second hand in order to control most any app. That is hard to do if you wear warm or 
 protective gloves, doing that in wet environment, or simply cannot use both hands for safety reasons. I'm offering an 
 almost ready to implement Android solution which allows to control any software with 4 virtual arrow keys and 2 virtual 
 buttons, using one hand only and without any need to touch anything on the phone, as well as making the app aware of the 
